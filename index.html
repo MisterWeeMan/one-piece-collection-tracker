@@ -139,6 +139,18 @@
   .btn-danger{ background: transparent; border-color: var(--danger); color: var(--danger); }
   .btn-row{ display:flex; gap: 8px; flex-wrap:wrap; }
   .hint{ font-size: 11.5px; color: var(--text-muted); margin-top: 6px; line-height:1.5; }
+  .set-order-list{ display:flex; flex-direction:column; gap: 6px; margin-top: 8px; }
+  .set-order-row{
+    display:flex; align-items:center; justify-content: space-between; gap: 8px; padding: 6px 10px;
+    border: 1px solid var(--border); border-radius: 8px; background: var(--panel-2);
+  }
+  .set-order-name{ font-size: 13px; color: var(--text); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; flex:1; min-width:0; }
+  .set-order-btns{ display:flex; gap: 4px; flex-shrink:0; }
+  .btn-arrow{
+    width: 28px; height: 28px; border-radius: 6px; border: 1px solid var(--border); background: var(--panel);
+    color: var(--text); font-size: 11px; display:flex; align-items:center; justify-content:center;
+  }
+  .btn-arrow:disabled{ opacity: 0.3; }
   .msg{ font-size: 12.5px; margin-top: 8px; padding: 8px 10px; border-radius: 8px; display:none; }
   .msg.show{ display:block; }
   .msg.ok{ background: rgba(79,167,158,0.15); color: var(--teal); }
@@ -223,6 +235,12 @@ OP01-003 | Nami | OP-01 Romance Dawn | C"></textarea>
     </div>
 
     <div class="manage-section">
+      <h3>Ordina i set</h3>
+      <p class="hint">Usa le freccette per decidere in che ordine i set vengono mostrati nella checklist principale.</p>
+      <div class="set-order-list" id="set-order-list"></div>
+    </div>
+
+    <div class="manage-section">
       <h3>Backup dati</h3>
       <p class="hint">I dati sono salvati automaticamente in questo browser, su questo dispositivo. Se cambi telefono o browser dovrai reimportare i dati: esporta un backup ogni tanto per sicurezza.</p>
       <div class="btn-row">
@@ -289,7 +307,7 @@ OP01-003 | Nami | OP-01 Romance Dawn | C"></textarea>
 <script>
 (function(){
   var STORAGE_KEY = 'op-collection-cards';
-  var state = { cards: [], filter: 'all', setFilter: '', rarityFilter: '', search: '', collapsed: {} };
+  var state = { cards: [], filter: 'all', setFilter: '', rarityFilter: '', search: '', collapsed: {}, setOrder: [] };
   var editingCode = null;
 
   function target(card){ return card.leader ? 1 : 4; }
@@ -343,6 +361,42 @@ OP01-003 | Nami | OP-01 Romance Dawn | C"></textarea>
       state.cards = [];
     }
     render();
+  }
+
+  var SET_ORDER_KEY = 'op-set-order';
+
+  function loadSetOrder(){
+    try{
+      var raw = localStorage.getItem(SET_ORDER_KEY);
+      if(raw){
+        var parsed = JSON.parse(raw);
+        if(Array.isArray(parsed)) state.setOrder = parsed;
+      }
+    }catch(e){
+      state.setOrder = [];
+    }
+  }
+
+  function saveSetOrder(){
+    try{
+      localStorage.setItem(SET_ORDER_KEY, JSON.stringify(state.setOrder));
+    }catch(e){
+      console.error('Salvataggio ordine set fallito', e);
+    }
+  }
+
+  function syncSetOrder(){
+    var present = Array.from(new Set(state.cards.map(function(c){ return c.set; })));
+    var changed = false;
+    state.setOrder = state.setOrder.filter(function(s){
+      var keep = present.indexOf(s) !== -1;
+      if(!keep) changed = true;
+      return keep;
+    });
+    present.forEach(function(s){
+      if(state.setOrder.indexOf(s) === -1){ state.setOrder.push(s); changed = true; }
+    });
+    if(changed) saveSetOrder();
   }
 
   var saveTimer = null;
@@ -484,11 +538,13 @@ OP01-003 | Nami | OP-01 Romance Dawn | C"></textarea>
       return true;
     });
     var groups = {};
-    var order = [];
     filtered.forEach(function(c){
-      if(!groups[c.set]){ groups[c.set] = []; order.push(c.set); }
+      if(!groups[c.set]) groups[c.set] = [];
       groups[c.set].push(c);
     });
+    var order = [];
+    state.setOrder.forEach(function(s){ if(groups.hasOwnProperty(s)) order.push(s); });
+    Object.keys(groups).forEach(function(s){ if(order.indexOf(s) === -1) order.push(s); });
     order.forEach(function(setName){
       groups[setName].sort(function(a,b){ return a.code.localeCompare(b.code); });
     });
@@ -607,11 +663,46 @@ OP01-003 | Nami | OP-01 Romance Dawn | C"></textarea>
   }
 
   function render(){
+    syncSetOrder();
     updateHeader();
     updateSetSelect();
     updateRaritySelect();
     renderList();
+    renderSetOrderList();
   }
+
+  function renderSetOrderList(){
+    var container = document.getElementById('set-order-list');
+    if(!container) return;
+    if(state.setOrder.length === 0){
+      container.innerHTML = '<p class="hint">Nessun set nel database.</p>';
+      return;
+    }
+    var html = '';
+    state.setOrder.forEach(function(s, i){
+      html += '<div class="set-order-row">';
+      html += '<span class="set-order-name">' + escapeHtml(s) + '</span>';
+      html += '<div class="set-order-btns">';
+      html += '<button class="btn-arrow" data-move="up" data-index="' + i + '"' + (i === 0 ? ' disabled' : '') + ' aria-label="Sposta su">&#9650;</button>';
+      html += '<button class="btn-arrow" data-move="down" data-index="' + i + '"' + (i === state.setOrder.length - 1 ? ' disabled' : '') + ' aria-label="Sposta giù">&#9660;</button>';
+      html += '</div></div>';
+    });
+    container.innerHTML = html;
+  }
+
+  document.getElementById('set-order-list').addEventListener('click', function(e){
+    var btn = e.target.closest('button[data-move]');
+    if(!btn || btn.disabled) return;
+    var idx = parseInt(btn.getAttribute('data-index'), 10);
+    var dir = btn.getAttribute('data-move');
+    var swapWith = dir === 'up' ? idx - 1 : idx + 1;
+    if(swapWith < 0 || swapWith >= state.setOrder.length) return;
+    var tmp = state.setOrder[idx];
+    state.setOrder[idx] = state.setOrder[swapWith];
+    state.setOrder[swapWith] = tmp;
+    saveSetOrder();
+    render();
+  });
 
   document.getElementById('search').addEventListener('input', function(e){
     state.search = e.target.value;
@@ -887,6 +978,7 @@ OP01-003 | Nami | OP-01 Romance Dawn | C"></textarea>
     }
   });
 
+  loadSetOrder();
   loadData();
   ghInit();
   window.addEventListener('resize', function(){ renderList(); });
