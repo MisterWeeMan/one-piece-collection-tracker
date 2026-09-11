@@ -189,6 +189,14 @@
       <select class="set-select" id="set-filter"><option value="">Tutti i set</option></select>
       <select class="set-select" id="rarity-filter"><option value="">Tutte le rarità</option></select>
     </div>
+    <div class="filter-row">
+      <button class="chip active" data-category="">Tutti i tipi</button>
+      <button class="chip" data-category="regular">Set regolari</button>
+      <button class="chip" data-category="deck">Deck</button>
+      <button class="chip" data-category="memorial">Memorial</button>
+      <button class="chip" data-category="premium">Premium</button>
+      <button class="chip" data-category="promo">Promo</button>
+    </div>
   </div>
 
   <div id="list-container"></div>
@@ -289,7 +297,7 @@ OP01-003 | Nami | OP-01 Romance Dawn | C"></textarea>
 <script>
 (function(){
   var STORAGE_KEY = 'op-collection-cards';
-  var state = { cards: [], filter: 'all', setFilter: '', rarityFilter: '', search: '', collapsed: {} };
+  var state = { cards: [], filter: 'all', setFilter: '', rarityFilter: '', categoryFilter: '', search: '', collapsed: {} };
 
   // Ordine cronologico reale dei set (codice carta), dal più recente al meno recente.
   // Usato per ordinare automaticamente i gruppi in checklist: nessun dato salvato, si
@@ -309,6 +317,20 @@ OP01-003 | Nami | OP-01 Romance Dawn | C"></textarea>
     var m = cards[0].code.match(/^([A-Z]+\d+)-/);
     var prefix = m ? m[1] : '';
     return SET_RELEASE_RANK.hasOwnProperty(prefix) ? SET_RELEASE_RANK[prefix] : Infinity;
+  }
+
+  function setCategory(code){
+    var c = (code || '').toUpperCase();
+    if(c === 'P' || /^P-\d+/.test(c)) return 'promo';
+    var m = c.match(/^([A-Z]+)\d+-/);
+    if(!m) return '';
+    switch(m[1]){
+      case 'OP': return 'regular';
+      case 'ST': return 'deck';
+      case 'EB': return 'memorial';
+      case 'PRB': return 'premium';
+      default: return '';
+    }
   }
   var editingCode = null;
 
@@ -494,6 +516,7 @@ OP01-003 | Nami | OP-01 Romance Dawn | C"></textarea>
     var filtered = state.cards.filter(function(c){
       if(state.setFilter && c.set !== state.setFilter) return false;
       if(state.rarityFilter && (c.rarity||'') !== state.rarityFilter) return false;
+      if(state.categoryFilter && setCategory(c.code) !== state.categoryFilter) return false;
       if(state.filter === 'missing' && c.owned >= target(c)) return false;
       if(state.filter === 'complete' && c.owned < target(c)) return false;
       if(state.filter === 'leader' && !c.leader) return false;
@@ -659,6 +682,15 @@ OP01-003 | Nami | OP-01 Romance Dawn | C"></textarea>
       document.querySelectorAll('.chip[data-filter]').forEach(function(c){ c.classList.remove('active'); });
       chip.classList.add('active');
       state.filter = chip.getAttribute('data-filter');
+      renderList();
+    });
+  });
+
+  document.querySelectorAll('.chip[data-category]').forEach(function(chip){
+    chip.addEventListener('click', function(){
+      document.querySelectorAll('.chip[data-category]').forEach(function(c){ c.classList.remove('active'); });
+      chip.classList.add('active');
+      state.categoryFilter = chip.getAttribute('data-category');
       renderList();
     });
   });
