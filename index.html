@@ -69,6 +69,10 @@
   .set-head{
     display:flex; align-items:center; justify-content: space-between; padding: 4px 2px; cursor:pointer;
   }
+  .set-head.pinned{
+    position: sticky; z-index: 8; background: var(--bg); padding: 8px 2px; margin: 0 -14px; padding-left: 14px; padding-right: 14px;
+    border-bottom: 1px solid var(--border);
+  }
   .set-head-left{ display:flex; align-items:center; gap:8px; min-width:0; }
   .set-name{ font-size: 14px; font-weight: 600; color: var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   .set-count{ font-size: 12px; color: var(--text-muted); flex-shrink:0; }
@@ -507,6 +511,15 @@ OP01-003 | Nami | OP-01 Romance Dawn"></textarea>
     return '<svg viewBox="0 0 24 24" fill="none" stroke="#2B2107" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 12.5 9.5 18 20 6"/></svg>';
   }
 
+  function isCollapsed(setName){
+    return state.collapsed.hasOwnProperty(setName) ? state.collapsed[setName] : true;
+  }
+
+  function getPinTop(){
+    var hero = document.querySelector('.hero');
+    return hero ? Math.ceil(hero.getBoundingClientRect().height) : 0;
+  }
+
   function renderList(){
     var container = document.getElementById('list-container');
     if(state.cards.length === 0){
@@ -522,13 +535,14 @@ OP01-003 | Nami | OP-01 Romance Dawn"></textarea>
       return;
     }
     var html = '';
+    var pinTop = getPinTop();
     data.order.forEach(function(setName){
       var cards = data.groups[setName];
       var setOwned = 0, setTarget = 0;
       cards.forEach(function(c){ setOwned += Math.min(c.owned, target(c)); setTarget += target(c); });
-      var collapsed = !!state.collapsed[setName];
+      var collapsed = isCollapsed(setName);
       html += '<div class="set-group">';
-      html += '<div class="set-head" data-set="' + escapeHtml(setName) + '">';
+      html += '<div class="set-head' + (collapsed ? '' : ' pinned') + '"' + (collapsed ? '' : ' style="top:' + pinTop + 'px"') + ' data-set="' + escapeHtml(setName) + '">';
       html += '<div class="set-head-left"><svg class="chevron' + (collapsed?' collapsed':'') + '" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>';
       html += '<span class="set-name">' + escapeHtml(setName) + '</span></div>';
       html += '<span class="set-count">' + setOwned + '/' + setTarget + '</span>';
@@ -588,7 +602,7 @@ OP01-003 | Nami | OP-01 Romance Dawn"></textarea>
     var setHead = e.target.closest('.set-head');
     if(setHead){
       var name = setHead.getAttribute('data-set');
-      state.collapsed[name] = !state.collapsed[name];
+      state.collapsed[name] = !isCollapsed(name);
       renderList();
       return;
     }
@@ -824,6 +838,7 @@ OP01-003 | Nami | OP-01 Romance Dawn"></textarea>
 
   loadData();
   ghInit();
+  window.addEventListener('resize', function(){ renderList(); });
 })();
 </script>
 </body>
