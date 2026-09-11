@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no" />
+<title>Collezione — One Piece TCG</title>
+<style>
+  :root{
+    --bg: #0C1B2A;
+    --panel: #122A3F;
+    --panel-2: #17334B;
+    --border: #24425C;
+    --text: #EAF0F4;
+    --text-muted: #8CA3B5;
+    --gold: #D8AE55;
+    --gold-dim: #A9843E;
+    --teal: #4FA79E;
+    --danger: #D0665A;
+    --radius: 12px;
+    --font-display: Georgia, 'Iowan Old Style', 'Palatino Linotype', 'Times New Roman', serif;
+    --font-body: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    --font-mono: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+  }
+  *{ box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html,body{ margin:0; padding:0; background:var(--bg); color:var(--text); font-family:var(--font-body); }
+  body{ padding-bottom: 4rem; }
+  .wrap{ max-width: 480px; margin: 0 auto; padding: 0 14px; }
+  button{ font-family: inherit; cursor:pointer; }
+  input, select, textarea{ font-family: inherit; }
+
+  /* HEADER */
+  .hero{ position: sticky; top:0; z-index: 10; background: var(--bg); padding: 18px 0 10px; border-bottom: 1px solid var(--border); }
+  .hero-top{ display:flex; align-items:center; justify-content: space-between; gap: 12px; }
+  .hero-title{ font-family: var(--font-display); font-size: 22px; margin:0; letter-spacing: 0.2px; }
+  .hero-sub{ margin: 2px 0 0; font-size: 13px; color: var(--text-muted); }
+  .seal{
+    flex-shrink:0; width: 54px; height: 54px; border-radius: 50%;
+    background: radial-gradient(circle at 35% 30%, #E6C070, var(--gold) 55%, var(--gold-dim) 100%);
+    display:flex; align-items:center; justify-content:center; flex-direction:column;
+    border: 2px solid #7A5B22; color:#3A2A0C;
+  }
+  .seal b{ font-size: 15px; line-height:1; font-family: var(--font-display); }
+  .seal span{ font-size: 8px; letter-spacing: 0.5px; margin-top:1px; }
+  .meter{ margin-top: 12px; height: 8px; border-radius: 6px; background: var(--panel); overflow:hidden; border: 1px solid var(--border); }
+  .meter-fill{ height:100%; background: linear-gradient(90deg, var(--gold-dim), var(--gold)); transition: width .3s ease; }
+  .stats-row{ display:flex; justify-content: space-between; margin-top: 6px; font-size: 12px; color: var(--text-muted); }
+
+  /* SEARCH / FILTERS */
+  .controls{ padding: 12px 0 6px; display:flex; flex-direction:column; gap: 8px; }
+  .search-box{ position: relative; }
+  .search-box input{
+    width:100%; padding: 10px 12px; border-radius: var(--radius); border: 1px solid var(--border);
+    background: var(--panel); color: var(--text); font-size: 15px; outline:none;
+  }
+  .search-box input:focus{ border-color: var(--gold-dim); }
+  .filter-row{ display:flex; gap: 6px; flex-wrap: wrap; }
+  .chip{
+    padding: 6px 12px; border-radius: 999px; border: 1px solid var(--border); background: var(--panel);
+    color: var(--text-muted); font-size: 12.5px; white-space:nowrap;
+  }
+  .chip.active{ background: var(--gold); border-color: var(--gold); color: #2B2107; font-weight: 600; }
+  select.set-select{
+    padding: 7px 10px; border-radius: var(--radius); border: 1px solid var(--border); background: var(--panel);
+    color: var(--text); font-size: 12.5px; max-width: 100%;
+  }
+
+  /* SET GROUPS */
+  .set-group{ margin-top: 14px; }
+  .set-head{
+    display:flex; align-items:center; justify-content: space-between; padding: 4px 2px; cursor:pointer;
+  }
+  .set-head-left{ display:flex; align-items:center; gap:8px; min-width:0; }
+  .set-name{ font-size: 14px; font-weight: 600; color: var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .set-count{ font-size: 12px; color: var(--text-muted); flex-shrink:0; }
+  .chevron{ transition: transform .2s ease; color: var(--text-muted); flex-shrink:0; }
+  .chevron.collapsed{ transform: rotate(-90deg); }
+
+  /* CARD ROW */
+  .card-list{ display:flex; flex-direction:column; gap: 6px; margin-top: 6px; }
+  .card-row{
+    background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 10px 12px; display:flex; flex-direction:column; gap: 6px;
+  }
+  .card-row.complete{ border-color: var(--gold-dim); }
+  .card-top{ display:flex; align-items:baseline; gap: 8px; min-width:0; }
+  .card-code{ font-family: var(--font-mono); font-size: 12px; color: var(--gold); flex-shrink:0; }
+  .card-name{ font-size: 14.5px; color: var(--text); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; flex:1; min-width:0; }
+  .leader-pill{
+    flex-shrink:0; font-size: 10.5px; padding: 1px 7px; border-radius: 999px; background: var(--teal); color:#0C2420; font-weight:600;
+  }
+  .card-bottom{ display:flex; align-items:center; justify-content: space-between; gap: 10px; }
+  .card-set{ font-size: 11.5px; color: var(--text-muted); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .squares{ display:flex; gap: 5px; flex-shrink:0; }
+  .square{
+    width: 26px; height: 26px; border-radius: 6px; border: 1.5px solid var(--border); background: var(--panel-2);
+    display:flex; align-items:center; justify-content:center; transition: background .15s, border-color .15s;
+  }
+  .square.filled{ background: var(--gold); border-color: var(--gold); }
+  .square svg{ width:14px; height:14px; opacity:0; }
+  .square.filled svg{ opacity:1; }
+
+  .empty-state{ text-align:center; padding: 40px 20px; color: var(--text-muted); }
+  .empty-state p{ margin: 6px 0 0; font-size: 13.5px; }
+
+  /* MANAGE PANEL */
+  .manage-toggle{
+    width:100%; margin-top: 18px; padding: 11px; border-radius: var(--radius); border: 1px solid var(--border);
+    background: var(--panel); color: var(--text); font-size: 14px; display:flex; align-items:center; justify-content:center; gap:8px;
+  }
+  .manage-panel{ margin-top: 10px; display:none; flex-direction:column; gap: 14px; }
+  .manage-panel.open{ display:flex; }
+  .manage-section{ background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px; }
+  .manage-section h3{ margin:0 0 10px; font-size: 14px; font-family: var(--font-display); font-weight: normal; color: var(--gold); }
+  .field{ margin-bottom: 8px; }
+  .field label{ display:block; font-size: 11.5px; color: var(--text-muted); margin-bottom: 3px; }
+  .field input, .field textarea{
+    width:100%; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--border); background: var(--panel-2);
+    color: var(--text); font-size: 14px; outline:none;
+  }
+  .field textarea{ min-height: 90px; resize: vertical; font-family: var(--font-mono); font-size: 12.5px; }
+  .checkbox-row{ display:flex; align-items:center; gap:8px; margin-bottom: 10px; }
+  .checkbox-row input{ width:16px; height:16px; }
+  .checkbox-row label{ font-size: 13.5px; }
+  .btn{
+    padding: 9px 14px; border-radius: 8px; border: 1px solid var(--border); background: var(--panel-2);
+    color: var(--text); font-size: 13.5px; font-weight: 600;
+  }
+  .btn-gold{ background: var(--gold); border-color: var(--gold); color:#2B2107; }
+  .btn-danger{ background: transparent; border-color: var(--danger); color: var(--danger); }
+  .btn-row{ display:flex; gap: 8px; flex-wrap:wrap; }
+  .hint{ font-size: 11.5px; color: var(--text-muted); margin-top: 6px; line-height:1.5; }
+  .msg{ font-size: 12.5px; margin-top: 8px; padding: 8px 10px; border-radius: 8px; display:none; }
+  .msg.show{ display:block; }
+  .msg.ok{ background: rgba(79,167,158,0.15); color: var(--teal); }
+  .msg.err{ background: rgba(208,102,90,0.15); color: var(--danger); }
+
+  /* MODAL */
+  .overlay{
+    display:none; position: fixed; inset:0; background: rgba(5,12,20,0.72); z-index: 50;
+    align-items:center; justify-content:center; padding: 16px;
+  }
+  .overlay.open{ display:flex; }
+  .modal{ background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; width:100%; max-width: 400px; }
+  .modal h3{ margin:0 0 12px; font-family: var(--font-display); font-size: 17px; font-weight: normal; }
+  .fab{
+    position: fixed; bottom: 18px; right: 18px; width: 52px; height: 52px; border-radius: 50%;
+    background: var(--gold); border: none; color:#2B2107; display:flex; align-items:center; justify-content:center;
+    box-shadow: 0 3px 10px rgba(0,0,0,0.4); z-index: 20;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="hero">
+    <div class="hero-top">
+      <div>
+        <p class="hero-title">La mia collezione</p>
+        <p class="hero-sub" id="subtitle">Caricamento…</p>
+      </div>
+      <div class="seal"><b id="seal-pct">0%</b><span>TROVATE</span></div>
+    </div>
+    <div class="meter"><div class="meter-fill" id="meter-fill" style="width:0%"></div></div>
+    <div class="stats-row">
+      <span id="stat-owned">0 / 0 copie</span>
+      <span id="stat-sets">0 set</span>
+    </div>
+  </div>
+
+  <div class="controls">
+    <div class="search-box">
+      <input type="text" id="search" placeholder="Cerca per nome o codice…" />
+    </div>
+    <div class="filter-row">
+      <button class="chip active" data-filter="all">Tutte</button>
+      <button class="chip" data-filter="missing">Da trovare</button>
+      <button class="chip" data-filter="complete">Complete</button>
+      <button class="chip" data-filter="leader">Solo leader</button>
+      <select class="set-select" id="set-filter"><option value="">Tutti i set</option></select>
+    </div>
+  </div>
+
+  <div id="list-container"></div>
+
+  <button class="manage-toggle" id="manage-toggle">
+    <span id="manage-toggle-label">Gestisci database carte</span>
+  </button>
+
+  <div class="manage-panel" id="manage-panel">
+
+    <div class="manage-section">
+      <h3>Aggiungi una carta</h3>
+      <div class="field"><label>Codice</label><input type="text" id="add-code" placeholder="OP01-001" /></div>
+      <div class="field"><label>Nome</label><input type="text" id="add-name" placeholder="Monkey D. Luffy" /></div>
+      <div class="field"><label>Set</label><input type="text" id="add-set" placeholder="OP-01 Romance Dawn" /></div>
+      <div class="checkbox-row"><input type="checkbox" id="add-leader" /><label for="add-leader">È una carta Leader (obiettivo 1x invece di 4x)</label></div>
+      <div class="btn-row"><button class="btn btn-gold" id="add-submit">Aggiungi / aggiorna</button></div>
+      <div class="msg" id="add-msg"></div>
+    </div>
+
+    <div class="manage-section">
+      <h3>Importazione multipla</h3>
+      <div class="field">
+        <textarea id="bulk-text" placeholder="OP01-001 | Monkey D. Luffy | OP-01 Romance Dawn | L
+OP01-002 | Roronoa Zoro | OP-01 Romance Dawn
+OP01-003 | Nami | OP-01 Romance Dawn"></textarea>
+      </div>
+      <p class="hint">Una carta per riga: <b>codice | nome | set | L</b> (la "L" finale è opzionale, indica una carta Leader con obiettivo 1x). In alternativa puoi incollare un array JSON con i campi code, name, set, leader.</p>
+      <div class="btn-row" style="margin-top:10px;"><button class="btn btn-gold" id="bulk-submit">Importa carte</button></div>
+      <div class="msg" id="bulk-msg"></div>
+    </div>
+
+    <div class="manage-section">
+      <h3>Backup dati</h3>
+      <p class="hint">I dati sono salvati automaticamente in questo browser, su questo dispositivo. Se cambi telefono o browser dovrai reimportare i dati: esporta un backup ogni tanto per sicurezza.</p>
+      <div class="btn-row">
+        <button class="btn" id="export-btn">Esporta backup (JSON)</button>
+        <button class="btn btn-danger" id="clear-btn">Svuota collezione</button>
+      </div>
+      <div class="msg" id="backup-msg"></div>
+    </div>
+
+  </div>
+
+</div>
+
+<button class="fab" id="fab-add" aria-label="Aggiungi carta">
+  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#2B2107" stroke-width="2.4" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+</button>
+
+<div class="overlay" id="edit-overlay">
+  <div class="modal">
+    <h3 id="edit-title">Modifica carta</h3>
+    <div class="field"><label>Codice</label><input type="text" id="edit-code" /></div>
+    <div class="field"><label>Nome</label><input type="text" id="edit-name" /></div>
+    <div class="field"><label>Set</label><input type="text" id="edit-set" /></div>
+    <div class="checkbox-row"><input type="checkbox" id="edit-leader" /><label for="edit-leader">Carta Leader (obiettivo 1x)</label></div>
+    <div class="msg" id="edit-msg"></div>
+    <div class="btn-row" style="margin-top:6px; justify-content: space-between;">
+      <button class="btn btn-danger" id="edit-delete">Elimina</button>
+      <div class="btn-row">
+        <button class="btn" id="edit-cancel">Annulla</button>
+        <button class="btn btn-gold" id="edit-save">Salva</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  var STORAGE_KEY = 'op-collection-cards';
+  var state = { cards: [], filter: 'all', setFilter: '', search: '', collapsed: {} };
+  var editingCode = null;
+
+  function target(card){ return card.leader ? 1 : 4; }
+
+  function normalizeCode(c){ return (c||'').trim().toUpperCase(); }
+
+  function clampOwned(card){
+    var t = target(card);
+    if(card.owned < 0) card.owned = 0;
+    if(card.owned > t) card.owned = t;
+  }
+
+  function findCard(code){
+    var nc = normalizeCode(code);
+    for(var i=0;i<state.cards.length;i++){ if(state.cards[i].code === nc) return state.cards[i]; }
+    return null;
+  }
+
+  function upsertCard(data){
+    var nc = normalizeCode(data.code);
+    if(!nc) return { ok:false, error: 'Codice mancante' };
+    if(!data.name || !data.name.trim()) return { ok:false, error: 'Nome mancante' };
+    var existing = findCard(nc);
+    if(existing){
+      existing.name = data.name.trim();
+      existing.set = (data.set||'').trim() || existing.set;
+      existing.leader = !!data.leader;
+      clampOwned(existing);
+      return { ok:true, updated:true };
+    } else {
+      var card = { code: nc, name: data.name.trim(), set: (data.set||'').trim() || 'Senza set', leader: !!data.leader, owned: 0 };
+      state.cards.push(card);
+      return { ok:true, updated:false };
+    }
+  }
+
+  function deleteCard(code){
+    var nc = normalizeCode(code);
+    state.cards = state.cards.filter(function(c){ return c.code !== nc; });
+  }
+
+  function loadData(){
+    try{
+      var raw = localStorage.getItem(STORAGE_KEY);
+      if(raw){
+        var parsed = JSON.parse(raw);
+        if(Array.isArray(parsed)) state.cards = parsed;
+      }
+    }catch(e){
+      state.cards = [];
+    }
+    render();
+  }
+
+  var saveTimer = null;
+  function scheduleSave(){
+    if(saveTimer) clearTimeout(saveTimer);
+    saveTimer = setTimeout(saveData, 250);
+  }
+  function saveData(){
+    try{
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state.cards));
+    }catch(e){
+      console.error('Salvataggio fallito', e);
+    }
+  }
+
+  function escapeHtml(s){
+    return String(s).replace(/[&<>"']/g, function(c){
+      return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c];
+    });
+  }
+
+  function getFilteredGrouped(){
+    var q = state.search.trim().toLowerCase();
+    var filtered = state.cards.filter(function(c){
+      if(state.setFilter && c.set !== state.setFilter) return false;
+      if(state.filter === 'missing' && c.owned >= target(c)) return false;
+      if(state.filter === 'complete' && c.owned < target(c)) return false;
+      if(state.filter === 'leader' && !c.leader) return false;
+      if(q){
+        var hay = (c.code + ' ' + c.name).toLowerCase();
+        if(hay.indexOf(q) === -1) return false;
+      }
+      return true;
+    });
+    var groups = {};
+    var order = [];
+    filtered.forEach(function(c){
+      if(!groups[c.set]){ groups[c.set] = []; order.push(c.set); }
+      groups[c.set].push(c);
+    });
+    order.forEach(function(setName){
+      groups[setName].sort(function(a,b){ return a.code.localeCompare(b.code); });
+    });
+    return { groups: groups, order: order };
+  }
+
+  function updateHeader(){
+    var totalTarget = 0, totalOwned = 0;
+    var setsSeen = {};
+    state.cards.forEach(function(c){
+      totalTarget += target(c);
+      totalOwned += Math.min(c.owned, target(c));
+      setsSeen[c.set] = true;
+    });
+    var pct = totalTarget > 0 ? Math.round((totalOwned/totalTarget)*100) : 0;
+    document.getElementById('seal-pct').textContent = pct + '%';
+    document.getElementById('meter-fill').style.width = pct + '%';
+    document.getElementById('stat-owned').textContent = totalOwned + ' / ' + totalTarget + ' copie';
+    document.getElementById('stat-sets').textContent = Object.keys(setsSeen).length + ' set';
+    var subtitle = document.getElementById('subtitle');
+    subtitle.textContent = state.cards.length === 0 ? 'Nessuna carta nel database' : state.cards.length + ' carte censite';
+  }
+
+  function updateSetSelect(){
+    var sel = document.getElementById('set-filter');
+    var current = sel.value;
+    var sets = Array.from(new Set(state.cards.map(function(c){ return c.set; }))).sort();
+    sel.innerHTML = '<option value="">Tutti i set</option>' + sets.map(function(s){
+      return '<option value="' + escapeHtml(s) + '">' + escapeHtml(s) + '</option>';
+    }).join('');
+    if(sets.indexOf(current) !== -1) sel.value = current;
+  }
+
+  function squareSvg(){
+    return '<svg viewBox="0 0 24 24" fill="none" stroke="#2B2107" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 12.5 9.5 18 20 6"/></svg>';
+  }
+
+  function renderList(){
+    var container = document.getElementById('list-container');
+    if(state.cards.length === 0){
+      container.innerHTML = '<div class="empty-state">'
+        + '<p><b>Il database è vuoto.</b></p>'
+        + '<p>Aggiungi le carte una per una o importa una lista dal pannello qui sotto.</p>'
+        + '</div>';
+      return;
+    }
+    var data = getFilteredGrouped();
+    if(data.order.length === 0){
+      container.innerHTML = '<div class="empty-state"><p>Nessuna carta corrisponde ai filtri.</p></div>';
+      return;
+    }
+    var html = '';
+    data.order.forEach(function(setName){
+      var cards = data.groups[setName];
+      var setOwned = 0, setTarget = 0;
+      cards.forEach(function(c){ setOwned += Math.min(c.owned, target(c)); setTarget += target(c); });
+      var collapsed = !!state.collapsed[setName];
+      html += '<div class="set-group">';
+      html += '<div class="set-head" data-set="' + escapeHtml(setName) + '">';
+      html += '<div class="set-head-left"><svg class="chevron' + (collapsed?' collapsed':'') + '" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>';
+      html += '<span class="set-name">' + escapeHtml(setName) + '</span></div>';
+      html += '<span class="set-count">' + setOwned + '/' + setTarget + '</span>';
+      html += '</div>';
+      if(!collapsed){
+        html += '<div class="card-list">';
+        cards.forEach(function(c){
+          var t = target(c);
+          var isComplete = c.owned >= t;
+          html += '<div class="card-row' + (isComplete?' complete':'') + '">';
+          html += '<div class="card-top" data-edit="' + escapeHtml(c.code) + '">';
+          html += '<span class="card-code">' + escapeHtml(c.code) + '</span>';
+          html += '<span class="card-name">' + escapeHtml(c.name) + '</span>';
+          if(c.leader) html += '<span class="leader-pill">Leader</span>';
+          html += '</div>';
+          html += '<div class="card-bottom">';
+          html += '<span class="card-set">' + escapeHtml(c.set) + '</span>';
+          html += '<div class="squares" data-code="' + escapeHtml(c.code) + '">';
+          for(var i=0;i<t;i++){
+            html += '<button class="square' + (i < c.owned ? ' filled' : '') + '" data-idx="' + i + '" aria-label="Copia ' + (i+1) + '">' + squareSvg() + '</button>';
+          }
+          html += '</div></div></div>';
+        });
+        html += '</div>';
+      }
+      html += '</div>';
+    });
+    container.innerHTML = html;
+  }
+
+  function render(){
+    updateHeader();
+    updateSetSelect();
+    renderList();
+  }
+
+  document.getElementById('search').addEventListener('input', function(e){
+    state.search = e.target.value;
+    renderList();
+  });
+
+  document.getElementById('set-filter').addEventListener('change', function(e){
+    state.setFilter = e.target.value;
+    renderList();
+  });
+
+  document.querySelectorAll('.chip[data-filter]').forEach(function(chip){
+    chip.addEventListener('click', function(){
+      document.querySelectorAll('.chip[data-filter]').forEach(function(c){ c.classList.remove('active'); });
+      chip.classList.add('active');
+      state.filter = chip.getAttribute('data-filter');
+      renderList();
+    });
+  });
+
+  document.getElementById('list-container').addEventListener('click', function(e){
+    var setHead = e.target.closest('.set-head');
+    if(setHead){
+      var name = setHead.getAttribute('data-set');
+      state.collapsed[name] = !state.collapsed[name];
+      renderList();
+      return;
+    }
+    var square = e.target.closest('.square');
+    if(square){
+      var wrap = square.closest('.squares');
+      var code = wrap.getAttribute('data-code');
+      var idx = parseInt(square.getAttribute('data-idx'), 10);
+      var card = findCard(code);
+      if(card){
+        card.owned = (card.owned === idx + 1) ? idx : idx + 1;
+        clampOwned(card);
+        scheduleSave();
+        render();
+      }
+      return;
+    }
+    var editZone = e.target.closest('[data-edit]');
+    if(editZone){
+      openEdit(editZone.getAttribute('data-edit'));
+      return;
+    }
+  });
+
+  function showMsg(id, text, ok){
+    var el = document.getElementById(id);
+    el.textContent = text;
+    el.className = 'msg show ' + (ok ? 'ok' : 'err');
+    setTimeout(function(){ el.classList.remove('show'); }, 3200);
+  }
+
+  document.getElementById('manage-toggle').addEventListener('click', function(){
+    var panel = document.getElementById('manage-panel');
+    panel.classList.toggle('open');
+    document.getElementById('manage-toggle-label').textContent = panel.classList.contains('open') ? 'Nascondi gestione database' : 'Gestisci database carte';
+  });
+
+  document.getElementById('add-submit').addEventListener('click', function(){
+    var res = upsertCard({
+      code: document.getElementById('add-code').value,
+      name: document.getElementById('add-name').value,
+      set: document.getElementById('add-set').value,
+      leader: document.getElementById('add-leader').checked
+    });
+    if(res.ok){
+      document.getElementById('add-code').value = '';
+      document.getElementById('add-name').value = '';
+      document.getElementById('add-set').value = '';
+      document.getElementById('add-leader').checked = false;
+      showMsg('add-msg', res.updated ? 'Carta aggiornata.' : 'Carta aggiunta.', true);
+      scheduleSave();
+      render();
+    } else {
+      showMsg('add-msg', res.error, false);
+    }
+  });
+
+  function parseBulk(text){
+    text = text.trim();
+    if(!text) return { cards: [], error: 'Incolla almeno una riga.' };
+    if(text[0] === '[' || text[0] === '{'){
+      try{
+        var parsed = JSON.parse(text);
+        var arr = Array.isArray(parsed) ? parsed : [parsed];
+        return { cards: arr.map(function(o){
+          return { code: o.code || o.codice, name: o.name || o.nome, set: o.set, leader: !!(o.leader || o.isLeader) };
+        }) };
+      }catch(e){
+        return { cards: [], error: 'JSON non valido.' };
+      }
+    }
+    var lines = text.split('\n').map(function(l){ return l.trim(); }).filter(Boolean);
+    var cards = [];
+    for(var i=0;i<lines.length;i++){
+      var parts = lines[i].split('|').map(function(p){ return p.trim(); });
+      if(parts.length < 2){ return { cards: [], error: 'Riga ' + (i+1) + ' non valida: serve almeno codice | nome' }; }
+      var leaderFlag = parts[3] ? /^l(eader)?$/i.test(parts[3]) : false;
+      cards.push({ code: parts[0], name: parts[1], set: parts[2] || '', leader: leaderFlag });
+    }
+    return { cards: cards };
+  }
+
+  document.getElementById('bulk-submit').addEventListener('click', function(){
+    var raw = document.getElementById('bulk-text').value;
+    var parsedResult = parseBulk(raw);
+    if(parsedResult.error){
+      showMsg('bulk-msg', parsedResult.error, false);
+      return;
+    }
+    var added = 0, updated = 0, failed = 0;
+    parsedResult.cards.forEach(function(c){
+      var res = upsertCard(c);
+      if(res.ok){ if(res.updated) updated++; else added++; } else { failed++; }
+    });
+    scheduleSave();
+    render();
+    document.getElementById('bulk-text').value = '';
+    showMsg('bulk-msg', added + ' aggiunte, ' + updated + ' aggiornate' + (failed ? ', ' + failed + ' ignorate' : '') + '.', true);
+  });
+
+  document.getElementById('export-btn').addEventListener('click', function(){
+    try{
+      var dataStr = JSON.stringify(state.cards, null, 2);
+      var blob = new Blob([dataStr], { type: 'application/json' });
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement('a');
+      a.href = url;
+      a.download = 'one-piece-collection-backup.json';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      showMsg('backup-msg', 'Backup scaricato.', true);
+    }catch(e){
+      showMsg('backup-msg', 'Impossibile scaricare il backup su questo dispositivo.', false);
+    }
+  });
+
+  document.getElementById('clear-btn').addEventListener('click', function(){
+    if(confirm('Svuotare tutta la collezione? Questa azione non è reversibile.')){
+      state.cards = [];
+      scheduleSave();
+      render();
+      showMsg('backup-msg', 'Collezione svuotata.', true);
+    }
+  });
+
+  function openEdit(code){
+    var card = findCard(code);
+    if(!card) return;
+    editingCode = card.code;
+    document.getElementById('edit-title').textContent = 'Modifica carta';
+    document.getElementById('edit-code').value = card.code;
+    document.getElementById('edit-name').value = card.name;
+    document.getElementById('edit-set').value = card.set;
+    document.getElementById('edit-leader').checked = card.leader;
+    document.getElementById('edit-overlay').classList.add('open');
+  }
+
+  document.getElementById('fab-add').addEventListener('click', function(){
+    editingCode = null;
+    document.getElementById('edit-title').textContent = 'Aggiungi carta';
+    document.getElementById('edit-code').value = '';
+    document.getElementById('edit-name').value = '';
+    document.getElementById('edit-set').value = '';
+    document.getElementById('edit-leader').checked = false;
+    document.getElementById('edit-overlay').classList.add('open');
+  });
+
+  document.getElementById('edit-cancel').addEventListener('click', function(){
+    document.getElementById('edit-overlay').classList.remove('open');
+  });
+  document.getElementById('edit-overlay').addEventListener('click', function(e){
+    if(e.target.id === 'edit-overlay') document.getElementById('edit-overlay').classList.remove('open');
+  });
+
+  document.getElementById('edit-save').addEventListener('click', function(){
+    var newCode = document.getElementById('edit-code').value;
+    var res = upsertCard({
+      code: newCode,
+      name: document.getElementById('edit-name').value,
+      set: document.getElementById('edit-set').value,
+      leader: document.getElementById('edit-leader').checked
+    });
+    if(!res.ok){ showMsg('edit-msg', res.error, false); return; }
+    if(editingCode && normalizeCode(newCode) !== editingCode){
+      deleteCard(editingCode);
+    }
+    scheduleSave();
+    render();
+    document.getElementById('edit-overlay').classList.remove('open');
+  });
+
+  document.getElementById('edit-delete').addEventListener('click', function(){
+    if(!editingCode) return;
+    if(confirm('Eliminare questa carta dal database?')){
+      deleteCard(editingCode);
+      scheduleSave();
+      render();
+      document.getElementById('edit-overlay').classList.remove('open');
+    }
+  });
+
+  loadData();
+})();
+</script>
+</body>
+</html>
