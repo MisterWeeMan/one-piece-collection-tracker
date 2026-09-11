@@ -144,6 +144,12 @@
     display:flex; align-items:center; justify-content: space-between; gap: 8px; padding: 6px 10px;
     border: 1px solid var(--border); border-radius: 8px; background: var(--panel-2);
   }
+  .set-order-row.dragging{ z-index: 5; opacity: 0.85; box-shadow: 0 4px 10px rgba(0,0,0,0.4); }
+  .drag-handle{
+    cursor: grab; touch-action: none; color: var(--text-muted); padding: 0 4px; flex-shrink:0;
+    font-size: 16px; line-height:1; -webkit-user-select:none; user-select:none;
+  }
+  .drag-handle:active{ cursor: grabbing; }
   .set-order-name{ font-size: 13px; color: var(--text); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; flex:1; min-width:0; }
   .set-order-btns{ display:flex; gap: 4px; flex-shrink:0; }
   .btn-arrow{
@@ -236,7 +242,7 @@ OP01-003 | Nami | OP-01 Romance Dawn | C"></textarea>
 
     <div class="manage-section">
       <h3>Ordina i set</h3>
-      <p class="hint">Usa le freccette per decidere in che ordine i set vengono mostrati nella checklist principale.</p>
+      <p class="hint">Tieni premuto sull'icona ☰ e trascina per spostare un set direttamente dove vuoi, oppure usa le freccette per spostamenti di una posizione. L'ordine si applica subito alla checklist principale.</p>
       <div class="set-order-list" id="set-order-list"></div>
     </div>
 
@@ -680,7 +686,8 @@ OP01-003 | Nami | OP-01 Romance Dawn | C"></textarea>
     }
     var html = '';
     state.setOrder.forEach(function(s, i){
-      html += '<div class="set-order-row">';
+      html += '<div class="set-order-row" data-set="' + escapeHtml(s) + '">';
+      html += '<span class="drag-handle">&#9776;</span>';
       html += '<span class="set-order-name">' + escapeHtml(s) + '</span>';
       html += '<div class="set-order-btns">';
       html += '<button class="btn-arrow" data-move="up" data-index="' + i + '"' + (i === 0 ? ' disabled' : '') + ' aria-label="Sposta su">&#9650;</button>';
@@ -689,6 +696,68 @@ OP01-003 | Nami | OP-01 Romance Dawn | C"></textarea>
     });
     container.innerHTML = html;
   }
+
+  var setOrderDrag = null;
+
+  function onSetOrderDragMove(e){
+    if(!setOrderDrag) return;
+    var dy = e.clientY - setOrderDrag.startY;
+    setOrderDrag.row.style.transform = 'translateY(' + dy + 'px)';
+    var rowRect = setOrderDrag.row.getBoundingClientRect();
+    var centerY = rowRect.top + rowRect.height / 2;
+    var prev = setOrderDrag.row.previousElementSibling;
+    var next = setOrderDrag.row.nextElementSibling;
+    if(prev){
+      var prevRect = prev.getBoundingClientRect();
+      if(centerY < prevRect.top + prevRect.height / 2){
+        setOrderDrag.row.parentNode.insertBefore(setOrderDrag.row, prev);
+        setOrderDrag.startY = e.clientY;
+        setOrderDrag.row.style.transform = 'translateY(0px)';
+        return;
+      }
+    }
+    if(next){
+      var nextRect = next.getBoundingClientRect();
+      if(centerY > nextRect.top + nextRect.height / 2){
+        setOrderDrag.row.parentNode.insertBefore(next, setOrderDrag.row);
+        setOrderDrag.startY = e.clientY;
+        setOrderDrag.row.style.transform = 'translateY(0px)';
+        return;
+      }
+    }
+  }
+
+  function onSetOrderDragEnd(e){
+    if(!setOrderDrag) return;
+    var handle = setOrderDrag.handle;
+    handle.removeEventListener('pointermove', onSetOrderDragMove);
+    handle.removeEventListener('pointerup', onSetOrderDragEnd);
+    handle.removeEventListener('pointercancel', onSetOrderDragEnd);
+    try{ handle.releasePointerCapture(setOrderDrag.pointerId); }catch(err){}
+    setOrderDrag.row.classList.remove('dragging');
+    setOrderDrag.row.style.transform = '';
+    var rows = document.querySelectorAll('#set-order-list .set-order-row');
+    var newOrder = [];
+    rows.forEach(function(r){ newOrder.push(r.getAttribute('data-set')); });
+    state.setOrder = newOrder;
+    setOrderDrag = null;
+    saveSetOrder();
+    render();
+  }
+
+  document.getElementById('set-order-list').addEventListener('pointerdown', function(e){
+    var handle = e.target.closest('.drag-handle');
+    if(!handle) return;
+    var row = handle.closest('.set-order-row');
+    if(!row) return;
+    e.preventDefault();
+    setOrderDrag = { row: row, handle: handle, startY: e.clientY, pointerId: e.pointerId };
+    row.classList.add('dragging');
+    try{ handle.setPointerCapture(e.pointerId); }catch(err){}
+    handle.addEventListener('pointermove', onSetOrderDragMove);
+    handle.addEventListener('pointerup', onSetOrderDragEnd);
+    handle.addEventListener('pointercancel', onSetOrderDragEnd);
+  });
 
   document.getElementById('set-order-list').addEventListener('click', function(e){
     var btn = e.target.closest('button[data-move]');
