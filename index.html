@@ -139,24 +139,6 @@
   .btn-danger{ background: transparent; border-color: var(--danger); color: var(--danger); }
   .btn-row{ display:flex; gap: 8px; flex-wrap:wrap; }
   .hint{ font-size: 11.5px; color: var(--text-muted); margin-top: 6px; line-height:1.5; }
-  .set-order-list{ display:flex; flex-direction:column; gap: 6px; margin-top: 8px; }
-  .set-order-row{
-    display:flex; align-items:center; justify-content: space-between; gap: 8px; padding: 6px 10px;
-    border: 1px solid var(--border); border-radius: 8px; background: var(--panel-2);
-  }
-  .set-order-row.dragging{ z-index: 5; opacity: 0.85; box-shadow: 0 4px 10px rgba(0,0,0,0.4); }
-  .drag-handle{
-    cursor: grab; touch-action: none; color: var(--text-muted); padding: 0 4px; flex-shrink:0;
-    font-size: 16px; line-height:1; -webkit-user-select:none; user-select:none;
-  }
-  .drag-handle:active{ cursor: grabbing; }
-  .set-order-name{ font-size: 13px; color: var(--text); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; flex:1; min-width:0; }
-  .set-order-btns{ display:flex; gap: 4px; flex-shrink:0; }
-  .btn-arrow{
-    width: 28px; height: 28px; border-radius: 6px; border: 1px solid var(--border); background: var(--panel);
-    color: var(--text); font-size: 11px; display:flex; align-items:center; justify-content:center;
-  }
-  .btn-arrow:disabled{ opacity: 0.3; }
   .msg{ font-size: 12.5px; margin-top: 8px; padding: 8px 10px; border-radius: 8px; display:none; }
   .msg.show{ display:block; }
   .msg.ok{ background: rgba(79,167,158,0.15); color: var(--teal); }
@@ -241,12 +223,6 @@ OP01-003 | Nami | OP-01 Romance Dawn | C"></textarea>
     </div>
 
     <div class="manage-section">
-      <h3>Ordina i set</h3>
-      <p class="hint">Tieni premuto sull'icona ☰ e trascina per spostare un set direttamente dove vuoi, oppure usa le freccette per spostamenti di una posizione. L'ordine si applica subito alla checklist principale.</p>
-      <div class="set-order-list" id="set-order-list"></div>
-    </div>
-
-    <div class="manage-section">
       <h3>Backup dati</h3>
       <p class="hint">I dati sono salvati automaticamente in questo browser, su questo dispositivo. Se cambi telefono o browser dovrai reimportare i dati: esporta un backup ogni tanto per sicurezza.</p>
       <div class="btn-row">
@@ -313,7 +289,27 @@ OP01-003 | Nami | OP-01 Romance Dawn | C"></textarea>
 <script>
 (function(){
   var STORAGE_KEY = 'op-collection-cards';
-  var state = { cards: [], filter: 'all', setFilter: '', rarityFilter: '', search: '', collapsed: {}, setOrder: [] };
+  var state = { cards: [], filter: 'all', setFilter: '', rarityFilter: '', search: '', collapsed: {} };
+
+  // Ordine cronologico reale dei set (codice carta), dal più recente al meno recente.
+  // Usato per ordinare automaticamente i gruppi in checklist: nessun dato salvato, si
+  // ricalcola sempre dal codice delle carte, quindi resta coerente su ogni dispositivo.
+  var SET_RELEASE_ORDER = [
+    'OP17','ST31','ST32','ST33','ST34','ST35','ST36','OP16','ST30','OP15','EB03','EB04',
+    'OP14','ST29','OP13','PRB02','ST22','OP12','OP11','ST23','ST24','ST25','ST26','ST27','ST28',
+    'EB02','OP10','ST21','OP09','PRB01','ST15','ST16','ST17','ST18','ST19','ST20','OP08','ST14',
+    'OP07','EB01','ST13','OP06','ST12','ST11','OP05','ST10','OP04','ST08','ST09','OP03','ST07',
+    'OP02','ST06','ST05','OP01','ST01','ST02','ST03','ST04'
+  ];
+  var SET_RELEASE_RANK = {};
+  SET_RELEASE_ORDER.forEach(function(code, i){ SET_RELEASE_RANK[code] = i; });
+
+  function setGroupRank(cards){
+    if(!cards || !cards.length) return Infinity;
+    var m = cards[0].code.match(/^([A-Z]+\d+)-/);
+    var prefix = m ? m[1] : '';
+    return SET_RELEASE_RANK.hasOwnProperty(prefix) ? SET_RELEASE_RANK[prefix] : Infinity;
+  }
   var editingCode = null;
 
   function target(card){ return card.leader ? 1 : 4; }
@@ -367,42 +363,6 @@ OP01-003 | Nami | OP-01 Romance Dawn | C"></textarea>
       state.cards = [];
     }
     render();
-  }
-
-  var SET_ORDER_KEY = 'op-set-order';
-
-  function loadSetOrder(){
-    try{
-      var raw = localStorage.getItem(SET_ORDER_KEY);
-      if(raw){
-        var parsed = JSON.parse(raw);
-        if(Array.isArray(parsed)) state.setOrder = parsed;
-      }
-    }catch(e){
-      state.setOrder = [];
-    }
-  }
-
-  function saveSetOrder(){
-    try{
-      localStorage.setItem(SET_ORDER_KEY, JSON.stringify(state.setOrder));
-    }catch(e){
-      console.error('Salvataggio ordine set fallito', e);
-    }
-  }
-
-  function syncSetOrder(){
-    var present = Array.from(new Set(state.cards.map(function(c){ return c.set; })));
-    var changed = false;
-    state.setOrder = state.setOrder.filter(function(s){
-      var keep = present.indexOf(s) !== -1;
-      if(!keep) changed = true;
-      return keep;
-    });
-    present.forEach(function(s){
-      if(state.setOrder.indexOf(s) === -1){ state.setOrder.push(s); changed = true; }
-    });
-    if(changed) saveSetOrder();
   }
 
   var saveTimer = null;
@@ -548,11 +508,15 @@ OP01-003 | Nami | OP-01 Romance Dawn | C"></textarea>
       if(!groups[c.set]) groups[c.set] = [];
       groups[c.set].push(c);
     });
-    var order = [];
-    state.setOrder.forEach(function(s){ if(groups.hasOwnProperty(s)) order.push(s); });
-    Object.keys(groups).forEach(function(s){ if(order.indexOf(s) === -1) order.push(s); });
+    var order = Object.keys(groups);
     order.forEach(function(setName){
       groups[setName].sort(function(a,b){ return a.code.localeCompare(b.code); });
+    });
+    order.sort(function(a,b){
+      var ra = setGroupRank(groups[a]);
+      var rb = setGroupRank(groups[b]);
+      if(ra !== rb) return ra - rb;
+      return a.localeCompare(b);
     });
     return { groups: groups, order: order };
   }
@@ -669,109 +633,11 @@ OP01-003 | Nami | OP-01 Romance Dawn | C"></textarea>
   }
 
   function render(){
-    syncSetOrder();
     updateHeader();
     updateSetSelect();
     updateRaritySelect();
     renderList();
-    renderSetOrderList();
   }
-
-  function renderSetOrderList(){
-    var container = document.getElementById('set-order-list');
-    if(!container) return;
-    if(state.setOrder.length === 0){
-      container.innerHTML = '<p class="hint">Nessun set nel database.</p>';
-      return;
-    }
-    var html = '';
-    state.setOrder.forEach(function(s, i){
-      html += '<div class="set-order-row" data-set="' + escapeHtml(s) + '">';
-      html += '<span class="drag-handle">&#9776;</span>';
-      html += '<span class="set-order-name">' + escapeHtml(s) + '</span>';
-      html += '<div class="set-order-btns">';
-      html += '<button class="btn-arrow" data-move="up" data-index="' + i + '"' + (i === 0 ? ' disabled' : '') + ' aria-label="Sposta su">&#9650;</button>';
-      html += '<button class="btn-arrow" data-move="down" data-index="' + i + '"' + (i === state.setOrder.length - 1 ? ' disabled' : '') + ' aria-label="Sposta giù">&#9660;</button>';
-      html += '</div></div>';
-    });
-    container.innerHTML = html;
-  }
-
-  var setOrderDrag = null;
-
-  function onSetOrderDragMove(e){
-    if(!setOrderDrag) return;
-    var dy = e.clientY - setOrderDrag.startY;
-    setOrderDrag.row.style.transform = 'translateY(' + dy + 'px)';
-    var rowRect = setOrderDrag.row.getBoundingClientRect();
-    var centerY = rowRect.top + rowRect.height / 2;
-    var prev = setOrderDrag.row.previousElementSibling;
-    var next = setOrderDrag.row.nextElementSibling;
-    if(prev){
-      var prevRect = prev.getBoundingClientRect();
-      if(centerY < prevRect.top + prevRect.height / 2){
-        setOrderDrag.row.parentNode.insertBefore(setOrderDrag.row, prev);
-        setOrderDrag.startY = e.clientY;
-        setOrderDrag.row.style.transform = 'translateY(0px)';
-        return;
-      }
-    }
-    if(next){
-      var nextRect = next.getBoundingClientRect();
-      if(centerY > nextRect.top + nextRect.height / 2){
-        setOrderDrag.row.parentNode.insertBefore(next, setOrderDrag.row);
-        setOrderDrag.startY = e.clientY;
-        setOrderDrag.row.style.transform = 'translateY(0px)';
-        return;
-      }
-    }
-  }
-
-  function onSetOrderDragEnd(e){
-    if(!setOrderDrag) return;
-    var handle = setOrderDrag.handle;
-    handle.removeEventListener('pointermove', onSetOrderDragMove);
-    handle.removeEventListener('pointerup', onSetOrderDragEnd);
-    handle.removeEventListener('pointercancel', onSetOrderDragEnd);
-    try{ handle.releasePointerCapture(setOrderDrag.pointerId); }catch(err){}
-    setOrderDrag.row.classList.remove('dragging');
-    setOrderDrag.row.style.transform = '';
-    var rows = document.querySelectorAll('#set-order-list .set-order-row');
-    var newOrder = [];
-    rows.forEach(function(r){ newOrder.push(r.getAttribute('data-set')); });
-    state.setOrder = newOrder;
-    setOrderDrag = null;
-    saveSetOrder();
-    render();
-  }
-
-  document.getElementById('set-order-list').addEventListener('pointerdown', function(e){
-    var handle = e.target.closest('.drag-handle');
-    if(!handle) return;
-    var row = handle.closest('.set-order-row');
-    if(!row) return;
-    e.preventDefault();
-    setOrderDrag = { row: row, handle: handle, startY: e.clientY, pointerId: e.pointerId };
-    row.classList.add('dragging');
-    try{ handle.setPointerCapture(e.pointerId); }catch(err){}
-    handle.addEventListener('pointermove', onSetOrderDragMove);
-    handle.addEventListener('pointerup', onSetOrderDragEnd);
-    handle.addEventListener('pointercancel', onSetOrderDragEnd);
-  });
-
-  document.getElementById('set-order-list').addEventListener('click', function(e){
-    var btn = e.target.closest('button[data-move]');
-    if(!btn || btn.disabled) return;
-    var idx = parseInt(btn.getAttribute('data-index'), 10);
-    var dir = btn.getAttribute('data-move');
-    var swapWith = dir === 'up' ? idx - 1 : idx + 1;
-    if(swapWith < 0 || swapWith >= state.setOrder.length) return;
-    var tmp = state.setOrder[idx];
-    state.setOrder[idx] = state.setOrder[swapWith];
-    state.setOrder[swapWith] = tmp;
-    saveSetOrder();
-    render();
-  });
 
   document.getElementById('search').addEventListener('input', function(e){
     state.search = e.target.value;
@@ -1047,7 +913,6 @@ OP01-003 | Nami | OP-01 Romance Dawn | C"></textarea>
     }
   });
 
-  loadSetOrder();
   loadData();
   ghInit();
   window.addEventListener('resize', function(){ renderList(); });
