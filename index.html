@@ -92,6 +92,12 @@
   .leader-pill{
     flex-shrink:0; font-size: 10.5px; padding: 1px 7px; border-radius: 999px; background: var(--teal); color:#0C2420; font-weight:600;
   }
+  .rarity-pill{
+    flex-shrink:0; font-size: 10.5px; padding: 1px 7px; border-radius: 999px; border: 1px solid var(--border);
+    background: var(--panel-2); color: var(--text-muted); font-weight:600;
+  }
+  .rarity-pill.r-rare{ border-color: var(--teal); color: var(--teal); }
+  .rarity-pill.r-super{ background: var(--gold); border-color: var(--gold); color:#2B2107; }
   .card-bottom{ display:flex; align-items:center; justify-content: space-between; gap: 10px; }
   .card-set{ font-size: 11.5px; color: var(--text-muted); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   .squares{ display:flex; gap: 5px; flex-shrink:0; }
@@ -181,6 +187,7 @@
       <button class="chip" data-filter="complete">Complete</button>
       <button class="chip" data-filter="leader">Solo leader</button>
       <select class="set-select" id="set-filter"><option value="">Tutti i set</option></select>
+      <select class="set-select" id="rarity-filter"><option value="">Tutte le rarità</option></select>
     </div>
   </div>
 
@@ -197,6 +204,7 @@
       <div class="field"><label>Codice</label><input type="text" id="add-code" placeholder="OP01-001" /></div>
       <div class="field"><label>Nome</label><input type="text" id="add-name" placeholder="Monkey D. Luffy" /></div>
       <div class="field"><label>Set</label><input type="text" id="add-set" placeholder="OP-01 Romance Dawn" /></div>
+      <div class="field"><label>Rarità</label><input type="text" id="add-rarity" placeholder="C, UC, R, SR, SEC…" list="rarity-options" /></div>
       <div class="checkbox-row"><input type="checkbox" id="add-leader" /><label for="add-leader">È una carta Leader (obiettivo 1x invece di 4x)</label></div>
       <div class="btn-row"><button class="btn btn-gold" id="add-submit">Aggiungi / aggiorna</button></div>
       <div class="msg" id="add-msg"></div>
@@ -205,11 +213,11 @@
     <div class="manage-section">
       <h3>Importazione multipla</h3>
       <div class="field">
-        <textarea id="bulk-text" placeholder="OP01-001 | Monkey D. Luffy | OP-01 Romance Dawn | L
-OP01-002 | Roronoa Zoro | OP-01 Romance Dawn
-OP01-003 | Nami | OP-01 Romance Dawn"></textarea>
+        <textarea id="bulk-text" placeholder="OP01-001 | Monkey D. Luffy | OP-01 Romance Dawn | L | L
+OP01-002 | Roronoa Zoro | OP-01 Romance Dawn | SR
+OP01-003 | Nami | OP-01 Romance Dawn | C"></textarea>
       </div>
-      <p class="hint">Una carta per riga: <b>codice | nome | set | L</b> (la "L" finale è opzionale, indica una carta Leader con obiettivo 1x). In alternativa puoi incollare un array JSON con i campi code, name, set, leader.</p>
+      <p class="hint">Una carta per riga: <b>codice | nome | set | rarità | L</b> (rarità e "L" finale sono opzionali; "L" indica una carta Leader con obiettivo 1x). Le righe già usate in formato precedente, senza colonna rarità, restano valide. In alternativa puoi incollare un array JSON con i campi code, name, set, rarity, leader.</p>
       <div class="btn-row" style="margin-top:10px;"><button class="btn btn-gold" id="bulk-submit">Importa carte</button></div>
       <div class="msg" id="bulk-msg"></div>
     </div>
@@ -255,12 +263,17 @@ OP01-003 | Nami | OP-01 Romance Dawn"></textarea>
   <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#2B2107" stroke-width="2.4" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
 </button>
 
+<datalist id="rarity-options">
+  <option value="C"><option value="UC"><option value="R"><option value="SR"><option value="SEC"><option value="L"><option value="P"><option value="SP">
+</datalist>
+
 <div class="overlay" id="edit-overlay">
   <div class="modal">
     <h3 id="edit-title">Modifica carta</h3>
     <div class="field"><label>Codice</label><input type="text" id="edit-code" /></div>
     <div class="field"><label>Nome</label><input type="text" id="edit-name" /></div>
     <div class="field"><label>Set</label><input type="text" id="edit-set" /></div>
+    <div class="field"><label>Rarità</label><input type="text" id="edit-rarity" placeholder="C, UC, R, SR, SEC…" list="rarity-options" /></div>
     <div class="checkbox-row"><input type="checkbox" id="edit-leader" /><label for="edit-leader">Carta Leader (obiettivo 1x)</label></div>
     <div class="msg" id="edit-msg"></div>
     <div class="btn-row" style="margin-top:6px; justify-content: space-between;">
@@ -276,7 +289,7 @@ OP01-003 | Nami | OP-01 Romance Dawn"></textarea>
 <script>
 (function(){
   var STORAGE_KEY = 'op-collection-cards';
-  var state = { cards: [], filter: 'all', setFilter: '', search: '', collapsed: {} };
+  var state = { cards: [], filter: 'all', setFilter: '', rarityFilter: '', search: '', collapsed: {} };
   var editingCode = null;
 
   function target(card){ return card.leader ? 1 : 4; }
@@ -303,11 +316,12 @@ OP01-003 | Nami | OP-01 Romance Dawn"></textarea>
     if(existing){
       existing.name = data.name.trim();
       existing.set = (data.set||'').trim() || existing.set;
+      existing.rarity = (data.rarity||'').trim().toUpperCase();
       existing.leader = !!data.leader;
       clampOwned(existing);
       return { ok:true, updated:true };
     } else {
-      var card = { code: nc, name: data.name.trim(), set: (data.set||'').trim() || 'Senza set', leader: !!data.leader, owned: 0 };
+      var card = { code: nc, name: data.name.trim(), set: (data.set||'').trim() || 'Senza set', rarity: (data.rarity||'').trim().toUpperCase(), leader: !!data.leader, owned: 0 };
       state.cards.push(card);
       return { ok:true, updated:false };
     }
@@ -459,6 +473,7 @@ OP01-003 | Nami | OP-01 Romance Dawn"></textarea>
     var q = state.search.trim().toLowerCase();
     var filtered = state.cards.filter(function(c){
       if(state.setFilter && c.set !== state.setFilter) return false;
+      if(state.rarityFilter && (c.rarity||'') !== state.rarityFilter) return false;
       if(state.filter === 'missing' && c.owned >= target(c)) return false;
       if(state.filter === 'complete' && c.owned < target(c)) return false;
       if(state.filter === 'leader' && !c.leader) return false;
@@ -505,6 +520,23 @@ OP01-003 | Nami | OP-01 Romance Dawn"></textarea>
       return '<option value="' + escapeHtml(s) + '">' + escapeHtml(s) + '</option>';
     }).join('');
     if(sets.indexOf(current) !== -1) sel.value = current;
+  }
+
+  function updateRaritySelect(){
+    var sel = document.getElementById('rarity-filter');
+    var current = sel.value;
+    var rarities = Array.from(new Set(state.cards.map(function(c){ return c.rarity || ''; }).filter(Boolean))).sort();
+    sel.innerHTML = '<option value="">Tutte le rarità</option>' + rarities.map(function(r){
+      return '<option value="' + escapeHtml(r) + '">' + escapeHtml(r) + '</option>';
+    }).join('');
+    if(rarities.indexOf(current) !== -1) sel.value = current;
+  }
+
+  function rarityClass(r){
+    var v = (r||'').toUpperCase();
+    if(v === 'SEC' || v === 'SR') return 'r-super';
+    if(v === 'R') return 'r-rare';
+    return '';
   }
 
   function squareSvg(){
@@ -556,6 +588,7 @@ OP01-003 | Nami | OP-01 Romance Dawn"></textarea>
           html += '<div class="card-top" data-edit="' + escapeHtml(c.code) + '">';
           html += '<span class="card-code">' + escapeHtml(c.code) + '</span>';
           html += '<span class="card-name">' + escapeHtml(c.name) + '</span>';
+          if(c.rarity) html += '<span class="rarity-pill ' + rarityClass(c.rarity) + '">' + escapeHtml(c.rarity) + '</span>';
           if(c.leader) html += '<span class="leader-pill">Leader</span>';
           html += '</div>';
           html += '<div class="card-bottom">';
@@ -576,6 +609,7 @@ OP01-003 | Nami | OP-01 Romance Dawn"></textarea>
   function render(){
     updateHeader();
     updateSetSelect();
+    updateRaritySelect();
     renderList();
   }
 
@@ -586,6 +620,11 @@ OP01-003 | Nami | OP-01 Romance Dawn"></textarea>
 
   document.getElementById('set-filter').addEventListener('change', function(e){
     state.setFilter = e.target.value;
+    renderList();
+  });
+
+  document.getElementById('rarity-filter').addEventListener('change', function(e){
+    state.rarityFilter = e.target.value;
     renderList();
   });
 
@@ -645,12 +684,14 @@ OP01-003 | Nami | OP-01 Romance Dawn"></textarea>
       code: document.getElementById('add-code').value,
       name: document.getElementById('add-name').value,
       set: document.getElementById('add-set').value,
+      rarity: document.getElementById('add-rarity').value,
       leader: document.getElementById('add-leader').checked
     });
     if(res.ok){
       document.getElementById('add-code').value = '';
       document.getElementById('add-name').value = '';
       document.getElementById('add-set').value = '';
+      document.getElementById('add-rarity').value = '';
       document.getElementById('add-leader').checked = false;
       showMsg('add-msg', res.updated ? 'Carta aggiornata.' : 'Carta aggiunta.', true);
       scheduleSave();
@@ -668,7 +709,7 @@ OP01-003 | Nami | OP-01 Romance Dawn"></textarea>
         var parsed = JSON.parse(text);
         var arr = Array.isArray(parsed) ? parsed : [parsed];
         return { cards: arr.map(function(o){
-          return { code: o.code || o.codice, name: o.name || o.nome, set: o.set, leader: !!(o.leader || o.isLeader) };
+          return { code: o.code || o.codice, name: o.name || o.nome, set: o.set, rarity: o.rarity || o.rarita, leader: !!(o.leader || o.isLeader) };
         }) };
       }catch(e){
         return { cards: [], error: 'JSON non valido.' };
@@ -676,11 +717,18 @@ OP01-003 | Nami | OP-01 Romance Dawn"></textarea>
     }
     var lines = text.split('\n').map(function(l){ return l.trim(); }).filter(Boolean);
     var cards = [];
+    var isLeaderFlag = function(s){ return /^l(eader)?$/i.test(s); };
     for(var i=0;i<lines.length;i++){
       var parts = lines[i].split('|').map(function(p){ return p.trim(); });
       if(parts.length < 2){ return { cards: [], error: 'Riga ' + (i+1) + ' non valida: serve almeno codice | nome' }; }
-      var leaderFlag = parts[3] ? /^l(eader)?$/i.test(parts[3]) : false;
-      cards.push({ code: parts[0], name: parts[1], set: parts[2] || '', leader: leaderFlag });
+      var rarity = '', leaderFlag = false;
+      if(parts[3] && isLeaderFlag(parts[3]) && !parts[4]){
+        leaderFlag = true;
+      } else {
+        rarity = parts[3] || '';
+        leaderFlag = parts[4] ? isLeaderFlag(parts[4]) : false;
+      }
+      cards.push({ code: parts[0], name: parts[1], set: parts[2] || '', rarity: rarity, leader: leaderFlag });
     }
     return { cards: cards };
   }
@@ -788,6 +836,7 @@ OP01-003 | Nami | OP-01 Romance Dawn"></textarea>
     document.getElementById('edit-code').value = card.code;
     document.getElementById('edit-name').value = card.name;
     document.getElementById('edit-set').value = card.set;
+    document.getElementById('edit-rarity').value = card.rarity || '';
     document.getElementById('edit-leader').checked = card.leader;
     document.getElementById('edit-overlay').classList.add('open');
   }
@@ -798,6 +847,7 @@ OP01-003 | Nami | OP-01 Romance Dawn"></textarea>
     document.getElementById('edit-code').value = '';
     document.getElementById('edit-name').value = '';
     document.getElementById('edit-set').value = '';
+    document.getElementById('edit-rarity').value = '';
     document.getElementById('edit-leader').checked = false;
     document.getElementById('edit-overlay').classList.add('open');
   });
@@ -815,6 +865,7 @@ OP01-003 | Nami | OP-01 Romance Dawn"></textarea>
       code: newCode,
       name: document.getElementById('edit-name').value,
       set: document.getElementById('edit-set').value,
+      rarity: document.getElementById('edit-rarity').value,
       leader: document.getElementById('edit-leader').checked
     });
     if(!res.ok){ showMsg('edit-msg', res.error, false); return; }
