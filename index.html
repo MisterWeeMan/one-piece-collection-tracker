@@ -220,6 +220,29 @@ OP01-003 | Nami | OP-01 Romance Dawn"></textarea>
       <div class="msg" id="backup-msg"></div>
     </div>
 
+    <div class="manage-section">
+      <h3>Sincronizzazione tra dispositivi</h3>
+      <div id="gh-disconnected">
+        <p class="hint">Collega l'app a un Gist privato del tuo account GitHub: i dati vengono salvati lì e li ritrovi su qualsiasi altro dispositivo. Serve un Personal Access Token con permesso "gist" — <a href="https://github.com/settings/tokens" target="_blank" style="color:var(--gold);">crealo qui</a> (scegli "Generate new token (classic)", spunta solo la casella "gist", genera e copia il token).</p>
+        <div class="field"><label>Personal Access Token</label><input type="password" id="gh-token" placeholder="ghp_..." /></div>
+        <div class="field"><label>Gist ID (lascia vuoto se non ne hai già uno)</label><input type="text" id="gh-gistid" placeholder="solo se ti stai collegando a un gist esistente" /></div>
+        <div class="btn-row">
+          <button class="btn btn-gold" id="gh-create-new">Crea nuovo Gist</button>
+          <button class="btn" id="gh-connect-existing">Collega a Gist esistente</button>
+        </div>
+        <div class="msg" id="gh-msg"></div>
+      </div>
+      <div id="gh-connected" style="display:none;">
+        <p class="hint">Connesso. Su ogni altro dispositivo apri questo stesso pannello e inserisci lo stesso Gist ID con un token valido per collegarti allo stesso archivio.</p>
+        <div class="field"><label>Gist ID</label><input type="text" id="gh-gistid-display" readonly /></div>
+        <div class="btn-row">
+          <button class="btn" id="gh-sync-now">Sincronizza ora</button>
+          <button class="btn btn-danger" id="gh-disconnect">Disconnetti</button>
+        </div>
+        <p class="hint" id="gh-status"></p>
+      </div>
+    </div>
+
   </div>
 
 </div>
@@ -308,6 +331,7 @@ OP01-003 | Nami | OP-01 Romance Dawn"></textarea>
   function scheduleSave(){
     if(saveTimer) clearTimeout(saveTimer);
     saveTimer = setTimeout(saveData, 250);
+    ghSchedulePush();
   }
   function saveData(){
     try{
@@ -315,6 +339,110 @@ OP01-003 | Nami | OP-01 Romance Dawn"></textarea>
     }catch(e){
       console.error('Salvataggio fallito', e);
     }
+  }
+
+  var GH_TOKEN_KEY = 'op-gh-token';
+  var GH_GIST_KEY = 'op-gh-gistid';
+  var GIST_FILENAME = 'op-collection.json';
+  var ghSyncTimer = null;
+
+  function ghCreds(){
+    return { token: localStorage.getItem(GH_TOKEN_KEY) || '', gistId: localStorage.getItem(GH_GIST_KEY) || '' };
+  }
+  function ghSaveCreds(token, gistId){
+    localStorage.setItem(GH_TOKEN_KEY, token);
+    localStorage.setItem(GH_GIST_KEY, gistId);
+  }
+  function ghClearCreds(){
+    localStorage.removeItem(GH_TOKEN_KEY);
+    localStorage.removeItem(GH_GIST_KEY);
+  }
+
+  async function ghFetchGist(token, gistId){
+    var res = await fetch('https://api.github.com/gists/' + gistId, {
+      headers: { 'Authorization': 'token ' + token, 'Accept': 'application/vnd.github+json' }
+    });
+    if(!res.ok) throw new Error(res.status === 404 ? 'Gist non trovato.' : 'Token non valido o senza permessi.');
+    var data = await res.json();
+    var file = data.files && data.files[GIST_FILENAME];
+    if(!file) throw new Error('Il gist non contiene il file dati atteso.');
+    var content = file.content;
+    if(file.truncated){
+      var rawRes = await fetch(file.raw_url);
+      content = await rawRes.text();
+    }
+    var parsed = JSON.parse(content);
+    return Array.isArray(parsed) ? parsed : [];
+  }
+
+  async function ghCreateGist(token, cards){
+    var files = {};
+    files[GIST_FILENAME] = { content: JSON.stringify(cards, null, 2) };
+    var res = await fetch('https://api.github.com/gists', {
+      method: 'POST',
+      headers: { 'Authorization': 'token ' + token, 'Accept': 'application/vnd.github+json', 'Content-Type': 'application/json' },
+      body: JSON.stringify({ description: 'One Piece TCG collection data', public: false, files: files })
+    });
+    if(!res.ok) throw new Error('Token non valido o senza permesso "gist".');
+    var data = await res.json();
+    return data.id;
+  }
+
+  async function ghUpdateGist(token, gistId, cards){
+    var files = {};
+    files[GIST_FILENAME] = { content: JSON.stringify(cards, null, 2) };
+    var res = await fetch('https://api.github.com/gists/' + gistId, {
+      method: 'PATCH',
+      headers: { 'Authorization': 'token ' + token, 'Accept': 'application/vnd.github+json', 'Content-Type': 'application/json' },
+      body: JSON.stringify({ files: files })
+    });
+    if(!res.ok) throw new Error('Errore durante il salvataggio sul gist.');
+  }
+
+  function ghShowConnected(gistId){
+    document.getElementById('gh-disconnected').style.display = 'none';
+    document.getElementById('gh-connected').style.display = 'block';
+    document.getElementById('gh-gistid-display').value = gistId;
+  }
+  function ghShowDisconnected(){
+    document.getElementById('gh-disconnected').style.display = 'block';
+    document.getElementById('gh-connected').style.display = 'none';
+  }
+  function ghSetStatus(text){
+    var el = document.getElementById('gh-status');
+    if(el) el.textContent = text;
+  }
+
+  function ghTimestamp(){
+    return new Date().toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' });
+  }
+
+  function ghSchedulePush(){
+    var creds = ghCreds();
+    if(!creds.token || !creds.gistId) return;
+    if(ghSyncTimer) clearTimeout(ghSyncTimer);
+    ghSyncTimer = setTimeout(function(){
+      ghUpdateGist(creds.token, creds.gistId, state.cards).then(function(){
+        ghSetStatus('Sincronizzato alle ' + ghTimestamp());
+      }).catch(function(err){
+        ghSetStatus('Errore di sincronizzazione: ' + err.message);
+      });
+    }, 900);
+  }
+
+  function ghInit(){
+    var creds = ghCreds();
+    if(!creds.token || !creds.gistId){ ghShowDisconnected(); return; }
+    ghShowConnected(creds.gistId);
+    ghSetStatus('Aggiornamento…');
+    ghFetchGist(creds.token, creds.gistId).then(function(cards){
+      state.cards = cards;
+      saveData();
+      render();
+      ghSetStatus('Sincronizzato alle ' + ghTimestamp());
+    }).catch(function(err){
+      ghSetStatus('Uso i dati locali — ' + err.message);
+    });
   }
 
   function escapeHtml(s){
@@ -588,6 +716,56 @@ OP01-003 | Nami | OP-01 Romance Dawn"></textarea>
     }
   });
 
+  document.getElementById('gh-create-new').addEventListener('click', function(){
+    var token = document.getElementById('gh-token').value.trim();
+    if(!token){ showMsg('gh-msg', 'Inserisci il token.', false); return; }
+    showMsg('gh-msg', 'Creazione del gist in corso…', true);
+    ghCreateGist(token, state.cards).then(function(gistId){
+      ghSaveCreds(token, gistId);
+      ghShowConnected(gistId);
+      ghSetStatus('Gist creato e collegato alle ' + ghTimestamp());
+    }).catch(function(err){
+      showMsg('gh-msg', err.message, false);
+    });
+  });
+
+  document.getElementById('gh-connect-existing').addEventListener('click', function(){
+    var token = document.getElementById('gh-token').value.trim();
+    var gistId = document.getElementById('gh-gistid').value.trim();
+    if(!token || !gistId){ showMsg('gh-msg', 'Inserisci token e Gist ID.', false); return; }
+    showMsg('gh-msg', 'Connessione in corso…', true);
+    ghFetchGist(token, gistId).then(function(cards){
+      state.cards = cards;
+      ghSaveCreds(token, gistId);
+      saveData();
+      render();
+      ghShowConnected(gistId);
+      ghSetStatus('Collegato e sincronizzato alle ' + ghTimestamp());
+    }).catch(function(err){
+      showMsg('gh-msg', err.message, false);
+    });
+  });
+
+  document.getElementById('gh-sync-now').addEventListener('click', function(){
+    var creds = ghCreds();
+    ghSetStatus('Aggiornamento…');
+    ghFetchGist(creds.token, creds.gistId).then(function(cards){
+      state.cards = cards;
+      saveData();
+      render();
+      ghSetStatus('Sincronizzato alle ' + ghTimestamp());
+    }).catch(function(err){
+      ghSetStatus('Errore: ' + err.message);
+    });
+  });
+
+  document.getElementById('gh-disconnect').addEventListener('click', function(){
+    ghClearCreds();
+    ghShowDisconnected();
+    document.getElementById('gh-token').value = '';
+    document.getElementById('gh-gistid').value = '';
+  });
+
   function openEdit(code){
     var card = findCard(code);
     if(!card) return;
@@ -645,6 +823,7 @@ OP01-003 | Nami | OP-01 Romance Dawn"></textarea>
   });
 
   loadData();
+  ghInit();
 })();
 </script>
 </body>
