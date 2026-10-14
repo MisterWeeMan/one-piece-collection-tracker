@@ -109,6 +109,24 @@
   .square svg{ width:14px; height:14px; opacity:0; }
   .square.filled svg{ opacity:1; }
 
+  /* WISHLIST */
+  .view-row{ display:flex; gap: 6px; }
+  .view-row .chip{ flex:1; padding: 8px 12px; font-size: 13.5px; }
+  .wish-btn{
+    flex-shrink:0; width: 28px; height: 28px; padding:0; border:none; background:transparent; color: var(--text-muted);
+    display:flex; align-items:center; justify-content:center; align-self:center; margin: -4px -4px -4px 0;
+  }
+  .wish-btn svg{ width:20px; height:20px; fill:none; stroke: currentColor; stroke-width: 2; stroke-linejoin: round; }
+  .wish-btn.active{ color: var(--gold); }
+  .wish-btn.active svg{ fill: currentColor; }
+  .wish-list{ margin-top: 12px; }
+  .wish-row.done{ opacity: .5; }
+  .wish-missing{ font-size: 12.5px; font-weight: 600; color: var(--gold); flex-shrink:0; }
+  .wish-row.done .wish-missing{ color: var(--teal); }
+  .wishlist-only{ display:none; }
+  .wishlist-mode .wishlist-only{ display:flex; }
+  .wishlist-mode .checklist-only{ display:none !important; }
+
   .empty-state{ text-align:center; padding: 40px 20px; color: var(--text-muted); }
   .empty-state p{ margin: 6px 0 0; font-size: 13.5px; }
 
@@ -178,10 +196,18 @@
   </div>
 
   <div class="controls">
+    <div class="view-row">
+      <button class="chip active" data-view="checklist">Checklist</button>
+      <button class="chip" data-view="wishlist" id="wish-tab">Desideri</button>
+    </div>
     <div class="search-box">
       <input type="text" id="search" placeholder="Cerca per nome o codice…" />
     </div>
-    <div class="filter-row">
+    <div class="filter-row wishlist-only" id="wish-filters">
+      <select class="set-select" id="wish-set-filter"><option value="">Tutti i set</option></select>
+      <select class="set-select" id="wish-rarity-filter"><option value="">Tutte le rarità</option></select>
+    </div>
+    <div class="filter-row checklist-only">
       <button class="chip active" data-filter="all">Tutte</button>
       <button class="chip" data-filter="missing">Da trovare</button>
       <button class="chip" data-filter="complete">Complete</button>
@@ -189,7 +215,7 @@
       <select class="set-select" id="set-filter"><option value="">Tutti i set</option></select>
       <select class="set-select" id="rarity-filter"><option value="">Tutte le rarità</option></select>
     </div>
-    <div class="filter-row">
+    <div class="filter-row checklist-only">
       <button class="chip active" data-category="">Tutti i tipi</button>
       <button class="chip" data-category="regular">Set regolari</button>
       <button class="chip" data-category="deck">Deck</button>
@@ -201,11 +227,11 @@
 
   <div id="list-container"></div>
 
-  <button class="manage-toggle" id="manage-toggle">
+  <button class="manage-toggle checklist-only" id="manage-toggle">
     <span id="manage-toggle-label">Gestisci database carte</span>
   </button>
 
-  <div class="manage-panel" id="manage-panel">
+  <div class="manage-panel checklist-only" id="manage-panel">
 
     <div class="manage-section">
       <h3>Aggiungi una carta</h3>
@@ -267,7 +293,7 @@ OP01-003 | Nami | OP-01 Romance Dawn | C"></textarea>
 
 </div>
 
-<button class="fab" id="fab-add" aria-label="Aggiungi carta">
+<button class="fab checklist-only" id="fab-add" aria-label="Aggiungi carta">
   <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#2B2107" stroke-width="2.4" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
 </button>
 
@@ -297,7 +323,7 @@ OP01-003 | Nami | OP-01 Romance Dawn | C"></textarea>
 <script>
 (function(){
   var STORAGE_KEY = 'op-collection-cards';
-  var state = { cards: [], filter: 'all', setFilter: '', rarityFilter: '', categoryFilter: '', search: '', collapsed: {} };
+  var state = { cards: [], filter: 'all', setFilter: '', rarityFilter: '', categoryFilter: '', search: '', collapsed: {}, view: 'checklist', wishSetFilter: '', wishRarityFilter: '' };
 
   // Ordine cronologico reale dei set (codice carta), dal più recente al meno recente.
   // Usato per ordinare automaticamente i gruppi in checklist: nessun dato salvato, si
@@ -601,7 +627,87 @@ OP01-003 | Nami | OP-01 Romance Dawn | C"></textarea>
     return hero ? Math.ceil(hero.getBoundingClientRect().height) : 0;
   }
 
+  function starSvg(){
+    return '<svg viewBox="0 0 24 24"><polygon points="12 2.8 14.8 8.9 21.4 9.6 16.5 14.1 17.9 20.6 12 17.3 6.1 20.6 7.5 14.1 2.6 9.6 9.2 8.9"/></svg>';
+  }
+
+  function wishBtn(c){
+    return '<button class="wish-btn' + (c.wishlist ? ' active' : '') + '" data-wish="' + escapeHtml(c.code) + '" aria-pressed="' + (c.wishlist ? 'true' : 'false') + '" aria-label="' + (c.wishlist ? 'Rimuovi dai desideri' : 'Aggiungi ai desideri') + '">' + starSvg() + '</button>';
+  }
+
+  function updateWishTab(){
+    var n = state.cards.filter(function(c){ return c.wishlist; }).length;
+    document.getElementById('wish-tab').textContent = 'Desideri' + (n ? ' (' + n + ')' : '');
+  }
+
+  // Le opzioni dei filtri contengono solo set e rarità presenti nella lista dei desideri;
+  // se il valore selezionato non è più disponibile (carta rimossa) il filtro si azzera.
+  function fillWishSelect(id, allLabel, values, current){
+    var sel = document.getElementById(id);
+    sel.innerHTML = '<option value="">' + allLabel + '</option>' + values.map(function(v){
+      return '<option value="' + escapeHtml(v) + '">' + escapeHtml(v) + '</option>';
+    }).join('');
+    var keep = values.indexOf(current) !== -1 ? current : '';
+    sel.value = keep;
+    return keep;
+  }
+
+  function updateWishFilters(wishCards){
+    var sets = Array.from(new Set(wishCards.map(function(c){ return c.set; }))).sort();
+    var rarities = Array.from(new Set(wishCards.map(function(c){ return c.rarity || ''; }).filter(Boolean))).sort();
+    state.wishSetFilter = fillWishSelect('wish-set-filter', 'Tutti i set', sets, state.wishSetFilter);
+    state.wishRarityFilter = fillWishSelect('wish-rarity-filter', 'Tutte le rarità', rarities, state.wishRarityFilter);
+    document.getElementById('wish-filters').style.display = wishCards.length ? '' : 'none';
+  }
+
+  function renderWishlist(){
+    var container = document.getElementById('list-container');
+    var q = state.search.trim().toLowerCase();
+    var all = state.cards.filter(function(c){ return c.wishlist; });
+    updateWishFilters(all);
+    var items = all.filter(function(c){
+      if(state.wishSetFilter && c.set !== state.wishSetFilter) return false;
+      if(state.wishRarityFilter && (c.rarity||'') !== state.wishRarityFilter) return false;
+      return !q || (c.code + ' ' + c.name).toLowerCase().indexOf(q) !== -1;
+    });
+    if(all.length === 0){
+      container.innerHTML = '<div class="empty-state"><p><b>La lista dei desideri è vuota.</b></p>'
+        + '<p>Tocca la stella su una carta della checklist per aggiungerla qui.</p></div>';
+      return;
+    }
+    if(items.length === 0){
+      container.innerHTML = '<div class="empty-state"><p>Nessuna carta dei desideri corrisponde alla ricerca.</p></div>';
+      return;
+    }
+    // Da comprare prima (set più recente → meno recente, poi codice); le complete in fondo.
+    items.sort(function(a,b){
+      var da = a.owned >= target(a) ? 1 : 0, db = b.owned >= target(b) ? 1 : 0;
+      if(da !== db) return da - db;
+      var ra = setGroupRank([a]), rb = setGroupRank([b]);
+      if(ra !== rb) return ra - rb;
+      return a.code.localeCompare(b.code);
+    });
+    var html = '<div class="card-list wish-list">';
+    items.forEach(function(c){
+      var missing = target(c) - Math.min(c.owned, target(c));
+      html += '<div class="card-row wish-row' + (missing === 0 ? ' done' : '') + '">';
+      html += '<div class="card-top">';
+      html += '<span class="card-code">' + escapeHtml(c.code) + '</span>';
+      html += '<span class="card-name">' + escapeHtml(c.name) + '</span>';
+      if(c.rarity) html += '<span class="rarity-pill ' + rarityClass(c.rarity) + '">' + escapeHtml(c.rarity) + '</span>';
+      if(c.leader) html += '<span class="leader-pill">Leader</span>';
+      html += wishBtn(c);
+      html += '</div>';
+      html += '<div class="card-bottom"><span class="card-set">' + escapeHtml(c.set) + '</span>';
+      html += '<span class="wish-missing">' + (missing === 0 ? 'Completa' : 'Mancano ' + missing + ' (' + Math.min(c.owned, target(c)) + '/' + target(c) + ')') + '</span>';
+      html += '</div></div>';
+    });
+    html += '</div>';
+    container.innerHTML = html;
+  }
+
   function renderList(){
+    if(state.view === 'wishlist'){ renderWishlist(); return; }
     var container = document.getElementById('list-container');
     if(state.cards.length === 0){
       container.innerHTML = '<div class="empty-state">'
@@ -639,6 +745,7 @@ OP01-003 | Nami | OP-01 Romance Dawn | C"></textarea>
           html += '<span class="card-name">' + escapeHtml(c.name) + '</span>';
           if(c.rarity) html += '<span class="rarity-pill ' + rarityClass(c.rarity) + '">' + escapeHtml(c.rarity) + '</span>';
           if(c.leader) html += '<span class="leader-pill">Leader</span>';
+          html += wishBtn(c);
           html += '</div>';
           html += '<div class="card-bottom">';
           html += '<span class="card-set">' + escapeHtml(c.set) + '</span>';
@@ -657,6 +764,7 @@ OP01-003 | Nami | OP-01 Romance Dawn | C"></textarea>
 
   function render(){
     updateHeader();
+    updateWishTab();
     updateSetSelect();
     updateRaritySelect();
     renderList();
@@ -674,6 +782,16 @@ OP01-003 | Nami | OP-01 Romance Dawn | C"></textarea>
 
   document.getElementById('rarity-filter').addEventListener('change', function(e){
     state.rarityFilter = e.target.value;
+    renderList();
+  });
+
+  document.getElementById('wish-set-filter').addEventListener('change', function(e){
+    state.wishSetFilter = e.target.value;
+    renderList();
+  });
+
+  document.getElementById('wish-rarity-filter').addEventListener('change', function(e){
+    state.wishRarityFilter = e.target.value;
     renderList();
   });
 
@@ -695,7 +813,28 @@ OP01-003 | Nami | OP-01 Romance Dawn | C"></textarea>
     });
   });
 
+  document.querySelectorAll('.chip[data-view]').forEach(function(chip){
+    chip.addEventListener('click', function(){
+      document.querySelectorAll('.chip[data-view]').forEach(function(c){ c.classList.remove('active'); });
+      chip.classList.add('active');
+      state.view = chip.getAttribute('data-view');
+      document.body.classList.toggle('wishlist-mode', state.view === 'wishlist');
+      renderList();
+    });
+  });
+
   document.getElementById('list-container').addEventListener('click', function(e){
+    var wish = e.target.closest('.wish-btn');
+    if(wish){
+      var wc = findCard(wish.getAttribute('data-wish'));
+      if(wc){
+        if(wc.wishlist) delete wc.wishlist; else wc.wishlist = true;
+        scheduleSave();
+        updateWishTab();
+        renderList();
+      }
+      return;
+    }
     var setHead = e.target.closest('.set-head');
     if(setHead){
       var name = setHead.getAttribute('data-set');
