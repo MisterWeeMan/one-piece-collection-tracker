@@ -202,6 +202,35 @@
   .overlay.open{ display:flex; }
   .modal{ background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; width:100%; max-width: 400px; }
   .modal h3{ margin:0 0 12px; font-family: var(--font-display); font-size: 17px; font-weight: normal; }
+  /* DIALOG DETTAGLI CARTA */
+  .card-top[data-detail]{ cursor:pointer; }
+  .detail-modal{ max-height: calc(100vh - 32px); max-height: calc(100dvh - 32px); overflow-y:auto; }
+  .detail-figure{
+    position:relative; margin: 0 auto 10px; width: 210px; max-width: 70%; aspect-ratio: 600 / 838;
+    border-radius: 10px; background: var(--panel-2); border: 1px solid var(--border); overflow:hidden;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .detail-figure img{ width:100%; height:100%; object-fit:contain; display:block; }
+  .detail-img-msg{ position:absolute; inset:0; display:flex; align-items:center; justify-content:center; padding:10px; text-align:center; font-size:12px; color:var(--text-muted); }
+  .detail-img-msg:empty{ display:none; }
+  .detail-caption{ text-align:center; font-size:12px; color:var(--gold); min-height: 16px; margin: 0 0 8px; }
+  .detail-variants-title{ font-size: 11.5px; color: var(--text-muted); margin: 0 0 4px; }
+  .detail-variants{ display:flex; gap: 8px; overflow-x:auto; padding: 3px 2px 8px; margin-bottom: 6px; }
+  .variant-btn{
+    flex: 0 0 auto; width: 62px; padding: 4px; border: 1.5px solid var(--border); border-radius: 8px; background: var(--panel-2);
+    color: var(--text-muted); display:flex; flex-direction:column; align-items:center; gap: 4px;
+  }
+  .variant-btn.active{ border-color: var(--gold); color: var(--text); }
+  .variant-btn img{ width:100%; aspect-ratio: 600 / 838; object-fit:cover; border-radius: 4px; display:block; background: var(--panel); }
+  .variant-btn span{
+    font-size: 9.5px; line-height: 1.15; text-align:center; max-width:100%; overflow:hidden;
+    display:-webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; word-break: break-word;
+  }
+  .detail-head{ display:flex; align-items:baseline; gap: 8px; flex-wrap:wrap; margin-bottom: 10px; }
+  .detail-head h3{ margin:0; flex: 1 1 100%; }
+  .detail-grid{ display:grid; grid-template-columns: auto 1fr; gap: 6px 14px; margin: 0 0 12px; font-size: 13px; }
+  .detail-grid dt{ color: var(--text-muted); }
+  .detail-grid dd{ margin: 0; color: var(--text); word-break: break-word; }
   .fab{
     position: fixed; bottom: 18px; right: 18px; width: 52px; height: 52px; border-radius: 50%;
     background: var(--gold); border: none; color:#2B2107; display:flex; align-items:center; justify-content:center;
@@ -333,6 +362,22 @@ OP01-003 | Nami | OP-01 Romance Dawn | C"></textarea>
 <datalist id="rarity-options">
   <option value="C"><option value="UC"><option value="R"><option value="SR"><option value="SEC"><option value="L"><option value="P"><option value="SP">
 </datalist>
+
+<div class="overlay" id="detail-overlay">
+  <div class="modal detail-modal" role="dialog" aria-modal="true" aria-labelledby="detail-name">
+    <div class="detail-figure"><img id="detail-img" alt="" referrerpolicy="no-referrer" /><div class="detail-img-msg" id="detail-img-msg"></div></div>
+    <p class="detail-caption" id="detail-caption"></p>
+    <p class="detail-variants-title" id="detail-variants-title" style="display:none;">Versioni</p>
+    <div class="detail-variants" id="detail-variants" style="display:none;"></div>
+    <div class="detail-head" id="detail-head"></div>
+    <dl class="detail-grid" id="detail-grid"></dl>
+    <div class="btn-row" style="justify-content: space-between;">
+      <button class="btn" id="detail-edit">Modifica</button>
+      <button class="btn btn-gold" id="detail-close">Chiudi</button>
+    </div>
+    <p class="hint" id="detail-credit"></p>
+  </div>
+</div>
 
 <div class="overlay" id="edit-overlay">
   <div class="modal">
@@ -1025,7 +1070,7 @@ OP01-003 | Nami | OP-01 Romance Dawn | C"></textarea>
     items.forEach(function(c){
       var missing = target(c) - Math.min(c.owned, target(c));
       html += '<div class="card-row wish-row' + (missing === 0 ? ' done' : '') + '">';
-      html += '<div class="card-top">';
+      html += '<div class="card-top" data-detail="' + escapeHtml(c.code) + '">';
       html += '<span class="card-code">' + escapeHtml(c.code) + '</span>';
       html += '<span class="card-name">' + escapeHtml(c.name) + '</span>';
       if(c.rarity) html += '<span class="rarity-pill ' + rarityClass(c.rarity) + '">' + escapeHtml(c.rarity) + '</span>';
@@ -1075,7 +1120,7 @@ OP01-003 | Nami | OP-01 Romance Dawn | C"></textarea>
           var t = target(c);
           var isComplete = c.owned >= t;
           html += '<div class="card-row' + (isComplete?' complete':'') + '">';
-          html += '<div class="card-top" data-edit="' + escapeHtml(c.code) + '">';
+          html += '<div class="card-top" data-detail="' + escapeHtml(c.code) + '">';
           html += '<span class="card-code">' + escapeHtml(c.code) + '</span>';
           html += '<span class="card-name">' + escapeHtml(c.name) + '</span>';
           if(c.rarity) html += '<span class="rarity-pill ' + rarityClass(c.rarity) + '">' + escapeHtml(c.rarity) + '</span>';
@@ -1191,9 +1236,9 @@ OP01-003 | Nami | OP-01 Romance Dawn | C"></textarea>
       }
       return;
     }
-    var editZone = e.target.closest('[data-edit]');
-    if(editZone){
-      openEdit(editZone.getAttribute('data-edit'));
+    var detailZone = e.target.closest('[data-detail]');
+    if(detailZone){
+      openDetail(detailZone.getAttribute('data-detail'));
       return;
     }
   });
@@ -1352,6 +1397,172 @@ OP01-003 | Nami | OP-01 Romance Dawn | C"></textarea>
     ghShowDisconnected();
     document.getElementById('gh-token').value = '';
     document.getElementById('gh-gistid').value = '';
+  });
+
+  // ---- DIALOG DETTAGLI ----
+  // card-catalog.json (generato da scripts/build-catalog.mjs) elenca per codice le versioni (base,
+  // parallel, ...) con l'id prodotto TCGplayer da cui si ricavano le immagini, più i dati strutturati.
+  // Si carica solo alla prima apertura del dialog; se manca (file non caricato, offline) il dialog
+  // mostra comunque i dati della carta, senza immagine né dati extra. Le immagini del sito ufficiale
+  // non sono usabili: invia Cross-Origin-Resource-Policy: same-site e il browser le blocca.
+  var CATALOG_URL = 'card-catalog.json';
+  var TCG_IMG = 'https://tcgplayer-cdn.tcgplayer.com/product/';
+  var COLOR_IT = { Red: 'Rosso', Green: 'Verde', Blue: 'Blu', Purple: 'Viola', Black: 'Nero', Yellow: 'Giallo' };
+  var TYPE_IT = { Leader: 'Leader', Character: 'Personaggio', Event: 'Evento', Stage: 'Stage' };
+  var catalog = null, catalogPromise = null;
+  var detailCode = null;
+
+  function loadCatalog(){
+    if(catalog) return Promise.resolve(catalog);
+    if(!catalogPromise){
+      catalogPromise = fetch(CATALOG_URL).then(function(res){
+        if(!res.ok) throw new Error('catalogo non disponibile');
+        return res.json();
+      }).then(function(data){
+        catalog = (data && data.cards) || {};
+        return catalog;
+      }).catch(function(){
+        catalogPromise = null; // riprova alla prossima apertura
+        return {};
+      });
+    }
+    return catalogPromise;
+  }
+
+  function tcgImg(id, size){ return TCG_IMG + id + '_' + size + 'w.jpg'; }
+
+  function setDetailMessage(text){
+    document.getElementById('detail-img').style.visibility = 'hidden';
+    document.getElementById('detail-img-msg').textContent = text;
+  }
+
+  // Prova gli URL in ordine finché uno carica; se falliscono tutti mostra un messaggio.
+  function setDetailImage(urls){
+    var img = document.getElementById('detail-img');
+    var msg = document.getElementById('detail-img-msg');
+    var i = 0;
+    msg.textContent = 'Caricamento…';
+    img.style.visibility = 'hidden';
+    img.onload = function(){ msg.textContent = ''; img.style.visibility = ''; };
+    img.onerror = function(){
+      i++;
+      if(i < urls.length){ img.src = urls[i]; return; }
+      msg.textContent = 'Immagine non disponibile';
+    };
+    img.src = urls[0];
+  }
+
+  function detailRow(dl, label, value){
+    if(!value) return;
+    var dt = document.createElement('dt'); dt.textContent = label;
+    var dd = document.createElement('dd'); dd.textContent = value;
+    dl.appendChild(dt); dl.appendChild(dd);
+  }
+
+  function renderDetailGrid(card, entry){
+    var dl = document.getElementById('detail-grid');
+    dl.innerHTML = '';
+    var t = target(card);
+    detailRow(dl, 'Set', card.set);
+    detailRow(dl, 'Copie', Math.min(card.owned || 0, t) + ' / ' + t);
+    if(card.wishlist) detailRow(dl, 'Desideri', 'Sì');
+    if(!entry) return;
+    detailRow(dl, 'Tipo', TYPE_IT[entry.type] || entry.type);
+    detailRow(dl, 'Colore', entry.color && entry.color.split(';').map(function(c){ return COLOR_IT[c] || c; }).join(' / '));
+    detailRow(dl, 'Costo', entry.cost);
+    detailRow(dl, 'Vita', entry.life);
+    detailRow(dl, 'Power', entry.power);
+    detailRow(dl, 'Counter', entry.counter);
+    detailRow(dl, 'Attributo', entry.attribute);
+    detailRow(dl, 'Categorie', entry.subtypes && entry.subtypes.split(';').join(', '));
+  }
+
+  function renderDetailVariants(card, entry){
+    var box = document.getElementById('detail-variants');
+    var title = document.getElementById('detail-variants-title');
+    var caption = document.getElementById('detail-caption');
+    var variants = (entry && entry.variants) || [];
+    box.innerHTML = '';
+    caption.textContent = '';
+    if(variants.length === 0){
+      setDetailMessage(catalog ? 'Nessuna immagine per questo codice.' : 'Immagini non disponibili: catalogo non caricato.');
+      box.style.display = title.style.display = 'none';
+      return;
+    }
+    function select(idx){
+      var v = variants[idx];
+      [].forEach.call(box.children, function(b, i){ b.classList.toggle('active', i === idx); b.setAttribute('aria-pressed', i === idx ? 'true' : 'false'); });
+      caption.textContent = variants.length > 1 ? v[1] : '';
+      setDetailImage([tcgImg(v[0], 400), tcgImg(v[0], 200)]);
+    }
+    if(variants.length > 1){
+      variants.forEach(function(v, idx){
+        var b = document.createElement('button');
+        b.type = 'button'; b.className = 'variant-btn'; b.title = v[1];
+        var im = document.createElement('img');
+        im.alt = ''; im.loading = 'lazy'; im.referrerPolicy = 'no-referrer'; im.src = tcgImg(v[0], 200);
+        im.onerror = function(){ im.style.visibility = 'hidden'; };
+        var label = document.createElement('span'); label.textContent = v[1];
+        b.appendChild(im); b.appendChild(label);
+        b.addEventListener('click', function(){ select(idx); });
+        box.appendChild(b);
+      });
+      title.textContent = 'Versioni (' + variants.length + ')';
+      box.style.display = title.style.display = '';
+    } else {
+      box.style.display = title.style.display = 'none';
+    }
+    select(0);
+  }
+
+  function openDetail(code){
+    var card = findCard(code);
+    if(!card) return;
+    detailCode = card.code;
+    var head = '<h3 id="detail-name">' + escapeHtml(card.name) + '</h3>'
+      + '<span class="card-code">' + escapeHtml(card.code) + '</span>'
+      + (card.rarity ? '<span class="rarity-pill ' + rarityClass(card.rarity) + '">' + escapeHtml(card.rarity) + '</span>' : '')
+      + (card.leader ? '<span class="leader-pill">Leader</span>' : '');
+    document.getElementById('detail-head').innerHTML = head;
+    renderDetailGrid(card, null);
+    document.getElementById('detail-variants').style.display = 'none';
+    document.getElementById('detail-variants-title').style.display = 'none';
+    document.getElementById('detail-caption').textContent = '';
+    document.getElementById('detail-img-msg').textContent = 'Caricamento…';
+    document.getElementById('detail-img').style.visibility = 'hidden';
+    document.getElementById('detail-credit').textContent = '';
+    document.getElementById('detail-overlay').classList.add('open');
+    document.getElementById('detail-close').focus();
+    loadCatalog().then(function(cat){
+      if(detailCode !== card.code) return; // chiuso o cambiato nel frattempo
+      var entry = cat[card.code] || null;
+      renderDetailGrid(card, entry);
+      renderDetailVariants(card, entry);
+      document.getElementById('detail-credit').textContent = (entry ? 'Immagini e dati: TCGplayer. ' : '')
+        + '© Eiichiro Oda/Shueisha, Toei Animation.';
+    });
+  }
+
+  function closeDetail(){
+    detailCode = null;
+    document.getElementById('detail-overlay').classList.remove('open');
+    var img = document.getElementById('detail-img');
+    img.onload = img.onerror = null;
+    img.removeAttribute('src'); // interrompe un eventuale caricamento in corso
+    document.getElementById('detail-variants').innerHTML = '';
+  }
+
+  document.getElementById('detail-close').addEventListener('click', closeDetail);
+  document.getElementById('detail-overlay').addEventListener('click', function(e){
+    if(e.target.id === 'detail-overlay') closeDetail();
+  });
+  document.getElementById('detail-edit').addEventListener('click', function(){
+    var code = detailCode;
+    closeDetail();
+    if(code) openEdit(code);
+  });
+  document.addEventListener('keydown', function(e){
+    if(e.key === 'Escape' && detailCode) closeDetail();
   });
 
   function openEdit(code){
