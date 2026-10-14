@@ -127,6 +127,38 @@
   .wishlist-mode .wishlist-only{ display:flex; }
   .wishlist-mode .checklist-only{ display:none !important; }
 
+  /* STATISTICHE */
+  .stats-mode .checklist-only, .stats-mode .wishlist-only, .stats-mode .search-box{ display:none !important; }
+  .stats-list{ margin-top: 12px; display:flex; flex-direction:column; gap: 14px; }
+  .stats-section{ background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px; }
+  .stats-section h3{ margin:0 0 10px; font-size: 14px; font-family: var(--font-display); font-weight: normal; color: var(--gold); }
+  .stat-tiles{ display:grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .stat-tile{ background: var(--panel-2); border: 1px solid var(--border); border-radius: 8px; padding: 10px 6px; text-align:center; }
+  .stat-tile b{ display:block; font-family: var(--font-display); font-size: 17px; color: var(--gold); font-weight: normal; }
+  .stat-tile span{ display:block; margin-top: 2px; font-size: 11px; color: var(--text-muted); }
+  .stat-row{ display:grid; grid-template-columns: 78px 1fr auto; align-items:center; gap: 10px; margin-top: 8px; }
+  .stat-row:first-of-type{ margin-top: 0; }
+  .stat-label{ font-size: 12.5px; color: var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .stat-bar{ height: 8px; border-radius: 6px; background: var(--panel-2); border: 1px solid var(--border); overflow:hidden; }
+  .stat-fill{ height:100%; background: linear-gradient(90deg, var(--gold-dim), var(--gold)); }
+  .stat-fill.full{ background: var(--teal); }
+  .stat-val{ font-size: 12px; color: var(--text-muted); font-variant-numeric: tabular-nums; min-width: 52px; text-align:right; }
+  .almost-row{
+    width:100%; display:block; text-align:left; background: var(--panel-2); border: 1px solid var(--border); border-radius: 8px;
+    padding: 9px 11px; margin-top: 6px; color: var(--text);
+  }
+  .almost-row:first-of-type{ margin-top: 0; }
+  .almost-top{ display:flex; justify-content: space-between; gap: 8px; align-items:baseline; margin-bottom: 6px; }
+  .almost-name{ font-size: 13px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; min-width:0; }
+  .almost-missing{ font-size: 12px; color: var(--gold); font-weight: 600; flex-shrink:0; }
+  .stats-note{ font-size: 12px; color: var(--text-muted); line-height: 1.5; margin: 8px 0 0; }
+  .chart{ width:100%; height:auto; display:block; }
+  .chart-text{ fill: var(--text-muted); font-size: 8px; font-family: var(--font-body); }
+  .chart-grid{ stroke: var(--border); stroke-width: 0.5; }
+  .chart-line{ fill:none; stroke: var(--gold); stroke-width: 1.6; stroke-linejoin: round; stroke-linecap: round; }
+  .chart-area{ fill: var(--gold); opacity: .12; }
+  .chart-dot{ fill: var(--gold); }
+
   .empty-state{ text-align:center; padding: 40px 20px; color: var(--text-muted); }
   .empty-state p{ margin: 6px 0 0; font-size: 13.5px; }
 
@@ -199,6 +231,7 @@
     <div class="view-row">
       <button class="chip active" data-view="checklist">Checklist</button>
       <button class="chip" data-view="wishlist" id="wish-tab">Desideri</button>
+      <button class="chip" data-view="stats">Statistiche</button>
     </div>
     <div class="search-box">
       <input type="text" id="search" placeholder="Cerca per nome o codice…" />
@@ -323,6 +356,12 @@ OP01-003 | Nami | OP-01 Romance Dawn | C"></textarea>
 <script>
 (function(){
   var STORAGE_KEY = 'op-collection-cards';
+  var META_KEY = 'op-collection-meta';
+  // Metadati di sincronizzazione, salvati a parte per lasciare invariato il formato delle carte:
+  // deleted: { CODICE: timestamp } sono le "lapidi" delle carte eliminate (senza, un'eliminazione
+  // verrebbe annullata dal merge con un altro dispositivo); history: { 'AAAA-MM-GG': {t, owned, target} }.
+  var meta = { deleted: {}, history: {} };
+  var HISTORY_MAX_DAYS = 400;
   var state = { cards: [], filter: 'all', setFilter: '', rarityFilter: '', categoryFilter: '', search: '', collapsed: {}, view: 'checklist', wishSetFilter: '', wishRarityFilter: '' };
 
   // Ordine cronologico reale dei set (codice carta), dal più recente al meno recente.
@@ -376,20 +415,30 @@ OP01-003 | Nami | OP-01 Romance Dawn | C"></textarea>
     return null;
   }
 
+  // Ogni modifica a una carta ne aggiorna il timestamp: è ciò che permette al merge di
+  // scegliere la versione più recente quando due dispositivi hanno dati diversi.
+  function touch(card){ card.updatedAt = Date.now(); }
+
   function upsertCard(data){
     var nc = normalizeCode(data.code);
     if(!nc) return { ok:false, error: 'Codice mancante' };
     if(!data.name || !data.name.trim()) return { ok:false, error: 'Nome mancante' };
     var existing = findCard(nc);
     if(existing){
+      var before = existing.name + '|' + existing.set + '|' + existing.rarity + '|' + existing.leader + '|' + existing.owned;
       existing.name = data.name.trim();
       existing.set = (data.set||'').trim() || existing.set;
       existing.rarity = (data.rarity||'').trim().toUpperCase();
       existing.leader = !!data.leader;
       clampOwned(existing);
+      // Un reimport di dati invariati non deve "rinfrescare" la carta, altrimenti
+      // batterebbe le copie segnate nel frattempo su un altro dispositivo.
+      var after = existing.name + '|' + existing.set + '|' + existing.rarity + '|' + existing.leader + '|' + existing.owned;
+      if(after !== before) touch(existing);
       return { ok:true, updated:true };
     } else {
       var card = { code: nc, name: data.name.trim(), set: (data.set||'').trim() || 'Senza set', rarity: (data.rarity||'').trim().toUpperCase(), leader: !!data.leader, owned: 0 };
+      touch(card);
       state.cards.push(card);
       return { ok:true, updated:false };
     }
@@ -398,6 +447,7 @@ OP01-003 | Nami | OP-01 Romance Dawn | C"></textarea>
   function deleteCard(code){
     var nc = normalizeCode(code);
     state.cards = state.cards.filter(function(c){ return c.code !== nc; });
+    meta.deleted[nc] = Date.now();
   }
 
   function loadData(){
@@ -410,7 +460,39 @@ OP01-003 | Nami | OP-01 Romance Dawn | C"></textarea>
     }catch(e){
       state.cards = [];
     }
+    try{
+      var rawMeta = localStorage.getItem(META_KEY);
+      if(rawMeta) meta = cleanMeta(JSON.parse(rawMeta));
+    }catch(e){
+      meta = { deleted: {}, history: {} };
+    }
     render();
+  }
+
+  function cleanMeta(m){
+    m = m && typeof m === 'object' ? m : {};
+    return {
+      deleted: m.deleted && typeof m.deleted === 'object' ? m.deleted : {},
+      history: m.history && typeof m.history === 'object' ? m.history : {}
+    };
+  }
+
+  function todayKey(){
+    var d = new Date();
+    return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+  }
+
+  // Una voce al giorno (l'ultima): serve al grafico "Andamento" della vista Statistiche.
+  function recordSnapshot(){
+    if(state.cards.length === 0) return;
+    var owned = 0, tgt = 0;
+    state.cards.forEach(function(c){ tgt += target(c); owned += Math.min(c.owned || 0, target(c)); });
+    var key = todayKey();
+    var cur = meta.history[key];
+    if(cur && cur.owned === owned && cur.target === tgt) return;
+    meta.history[key] = { t: Date.now(), owned: owned, target: tgt };
+    var keys = Object.keys(meta.history).sort();
+    while(keys.length > HISTORY_MAX_DAYS) delete meta.history[keys.shift()];
   }
 
   var saveTimer = null;
@@ -419,18 +501,87 @@ OP01-003 | Nami | OP-01 Romance Dawn | C"></textarea>
     saveTimer = setTimeout(saveData, 250);
     ghSchedulePush();
   }
-  function saveData(){
+  function persist(){
     try{
       localStorage.setItem(STORAGE_KEY, JSON.stringify(state.cards));
+      localStorage.setItem(META_KEY, JSON.stringify(meta));
     }catch(e){
       console.error('Salvataggio fallito', e);
     }
+  }
+  function saveData(){
+    recordSnapshot();
+    persist();
+  }
+
+  // Unisce due istantanee { cards, deleted, history } (locale e remota) senza perdere modifiche.
+  // Per ogni codice vince la carta con updatedAt maggiore (a parità vince quella remota, come
+  // prima della sincronizzazione a merge); una carta sopravvive solo se è più recente della
+  // sua eventuale lapide. Le carte senza updatedAt (dati vecchi) valgono 0.
+  function mergeSnapshots(local, remote){
+    var deleted = {};
+    [remote.deleted, local.deleted].forEach(function(d){
+      Object.keys(d || {}).forEach(function(code){
+        if(!deleted.hasOwnProperty(code) || d[code] > deleted[code]) deleted[code] = d[code];
+      });
+    });
+    var byCode = {};
+    remote.cards.forEach(function(c){ byCode[c.code] = c; });
+    local.cards.forEach(function(c){
+      var r = byCode[c.code];
+      if(!r || (c.updatedAt || 0) > (r.updatedAt || 0)) byCode[c.code] = c;
+    });
+    var cards = [];
+    Object.keys(byCode).forEach(function(code){
+      var c = byCode[code];
+      if(deleted.hasOwnProperty(code)){
+        if((c.updatedAt || 0) <= deleted[code]) return;
+        delete deleted[code];
+      }
+      cards.push(c);
+    });
+    var history = {};
+    [remote.history, local.history].forEach(function(h){
+      Object.keys(h || {}).forEach(function(day){
+        if(!history[day] || (h[day].t || 0) > (history[day].t || 0)) history[day] = h[day];
+      });
+    });
+    return { cards: cards, deleted: deleted, history: history };
+  }
+
+  // Forma canonica per confrontare due istantanee indipendentemente dall'ordine.
+  function canonSnapshot(s){
+    var cards = s.cards.slice().sort(function(a,b){ return a.code < b.code ? -1 : a.code > b.code ? 1 : 0; });
+    function sortedObj(o){
+      var out = {};
+      Object.keys(o || {}).sort().forEach(function(k){ out[k] = o[k]; });
+      return out;
+    }
+    return JSON.stringify({ cards: cards, deleted: sortedObj(s.deleted), history: sortedObj(s.history) });
+  }
+
+  function localSnapshot(){
+    return { cards: state.cards, deleted: meta.deleted, history: meta.history };
+  }
+
+  function applySnapshot(s){
+    state.cards = s.cards;
+    meta.deleted = s.deleted;
+    meta.history = s.history;
+    persist();
+    render();
   }
 
   var GH_TOKEN_KEY = 'op-gh-token';
   var GH_GIST_KEY = 'op-gh-gistid';
   var GIST_FILENAME = 'op-collection.json';
+  var GIST_META_FILENAME = 'op-meta.json';
+  var GH_SYNC_MIN_INTERVAL = 30000;
   var ghSyncTimer = null;
+  var ghSyncing = false;
+  var ghSyncAgain = false;
+  var ghSyncPromise = null;
+  var ghLastSync = 0;
 
   function ghCreds(){
     return { token: localStorage.getItem(GH_TOKEN_KEY) || '', gistId: localStorage.getItem(GH_GIST_KEY) || '' };
@@ -444,6 +595,17 @@ OP01-003 | Nami | OP-01 Romance Dawn | C"></textarea>
     localStorage.removeItem(GH_GIST_KEY);
   }
 
+  async function ghReadFile(file){
+    var content = file.content;
+    if(file.truncated){
+      var rawRes = await fetch(file.raw_url);
+      content = await rawRes.text();
+    }
+    return JSON.parse(content);
+  }
+
+  // Il file delle carte resta un semplice array (compatibile con le versioni precedenti);
+  // lapidi e storico stanno nel file affiancato, che le versioni vecchie ignorano.
   async function ghFetchGist(token, gistId){
     var res = await fetch('https://api.github.com/gists/' + gistId, {
       headers: { 'Authorization': 'token ' + token, 'Accept': 'application/vnd.github+json' }
@@ -452,18 +614,25 @@ OP01-003 | Nami | OP-01 Romance Dawn | C"></textarea>
     var data = await res.json();
     var file = data.files && data.files[GIST_FILENAME];
     if(!file) throw new Error('Il gist non contiene il file dati atteso.');
-    var content = file.content;
-    if(file.truncated){
-      var rawRes = await fetch(file.raw_url);
-      content = await rawRes.text();
+    var parsed = await ghReadFile(file);
+    var cards = (Array.isArray(parsed) ? parsed : []).filter(function(c){ return c && typeof c.code === 'string'; });
+    var remoteMeta = cleanMeta(null);
+    var metaFile = data.files[GIST_META_FILENAME];
+    if(metaFile){
+      try{ remoteMeta = cleanMeta(await ghReadFile(metaFile)); }catch(e){ /* file extra illeggibile: si riparte da vuoto */ }
     }
-    var parsed = JSON.parse(content);
-    return Array.isArray(parsed) ? parsed : [];
+    return { cards: cards, deleted: remoteMeta.deleted, history: remoteMeta.history };
   }
 
-  async function ghCreateGist(token, cards){
+  function ghFilesPayload(snap){
     var files = {};
-    files[GIST_FILENAME] = { content: JSON.stringify(cards, null, 2) };
+    files[GIST_FILENAME] = { content: JSON.stringify(snap.cards, null, 2) };
+    files[GIST_META_FILENAME] = { content: JSON.stringify({ deleted: snap.deleted, history: snap.history }, null, 2) };
+    return files;
+  }
+
+  async function ghCreateGist(token, snap){
+    var files = ghFilesPayload(snap);
     var res = await fetch('https://api.github.com/gists', {
       method: 'POST',
       headers: { 'Authorization': 'token ' + token, 'Accept': 'application/vnd.github+json', 'Content-Type': 'application/json' },
@@ -474,13 +643,11 @@ OP01-003 | Nami | OP-01 Romance Dawn | C"></textarea>
     return data.id;
   }
 
-  async function ghUpdateGist(token, gistId, cards){
-    var files = {};
-    files[GIST_FILENAME] = { content: JSON.stringify(cards, null, 2) };
+  async function ghUpdateGist(token, gistId, snap){
     var res = await fetch('https://api.github.com/gists/' + gistId, {
       method: 'PATCH',
       headers: { 'Authorization': 'token ' + token, 'Accept': 'application/vnd.github+json', 'Content-Type': 'application/json' },
-      body: JSON.stringify({ files: files })
+      body: JSON.stringify({ files: ghFilesPayload(snap) })
     });
     if(!res.ok) throw new Error('Errore durante il salvataggio sul gist.');
   }
@@ -503,32 +670,44 @@ OP01-003 | Nami | OP-01 Romance Dawn | C"></textarea>
     return new Date().toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' });
   }
 
+  // Sincronizzazione a tre passi: legge il Gist, lo unisce ai dati locali, scrive il risultato
+  // solo se è cambiato qualcosa. Non si scrive mai senza aver prima letto con successo, quindi
+  // un dispositivo con dati vecchi (o offline) non può più sovrascrivere quelli aggiornati.
+  function ghSync(){
+    var creds = ghCreds();
+    if(!creds.token || !creds.gistId) return Promise.resolve();
+    if(ghSyncing){ ghSyncAgain = true; return ghSyncPromise; }
+    ghSyncing = true;
+    ghSetStatus('Aggiornamento…');
+    ghSyncPromise = ghFetchGist(creds.token, creds.gistId).then(function(remote){
+      var merged = mergeSnapshots(localSnapshot(), remote);
+      applySnapshot(merged);
+      if(canonSnapshot(merged) === canonSnapshot(remote)) return;
+      return ghUpdateGist(creds.token, creds.gistId, merged);
+    }).then(function(){
+      ghLastSync = Date.now();
+      ghSetStatus('Sincronizzato alle ' + ghTimestamp());
+    }, function(err){
+      ghSetStatus('Non sincronizzato — ' + String(err.message).replace(/\.$/, '') + '. Le modifiche restano su questo dispositivo e verranno unite al prossimo tentativo.');
+    }).then(function(){
+      ghSyncing = false;
+      if(ghSyncAgain){ ghSyncAgain = false; return ghSync(); }
+    });
+    return ghSyncPromise;
+  }
+
   function ghSchedulePush(){
     var creds = ghCreds();
     if(!creds.token || !creds.gistId) return;
     if(ghSyncTimer) clearTimeout(ghSyncTimer);
-    ghSyncTimer = setTimeout(function(){
-      ghUpdateGist(creds.token, creds.gistId, state.cards).then(function(){
-        ghSetStatus('Sincronizzato alle ' + ghTimestamp());
-      }).catch(function(err){
-        ghSetStatus('Errore di sincronizzazione: ' + err.message);
-      });
-    }, 900);
+    ghSyncTimer = setTimeout(ghSync, 900);
   }
 
   function ghInit(){
     var creds = ghCreds();
     if(!creds.token || !creds.gistId){ ghShowDisconnected(); return; }
     ghShowConnected(creds.gistId);
-    ghSetStatus('Aggiornamento…');
-    ghFetchGist(creds.token, creds.gistId).then(function(cards){
-      state.cards = cards;
-      saveData();
-      render();
-      ghSetStatus('Sincronizzato alle ' + ghTimestamp());
-    }).catch(function(err){
-      ghSetStatus('Uso i dati locali — ' + err.message);
-    });
+    ghSync();
   }
 
   function escapeHtml(s){
@@ -660,6 +839,161 @@ OP01-003 | Nami | OP-01 Romance Dawn | C"></textarea>
     document.getElementById('wish-filters').style.display = wishCards.length ? '' : 'none';
   }
 
+  // ---- STATISTICHE ----
+  var RARITY_ORDER = ['C','UC','R','SR','SEC','L','SP','P'];
+  var CATEGORY_LABELS = [['regular','Set regolari'],['deck','Deck'],['memorial','Memorial'],['premium','Premium'],['promo','Promo'],['other','Altro']];
+  var ALMOST_DONE_MAX = 5;
+
+  function statBucket(){ return { owned: 0, target: 0, cards: 0, complete: 0 }; }
+  function statAdd(b, c){
+    var t = target(c), o = Math.min(c.owned || 0, t);
+    b.owned += o; b.target += t; b.cards++;
+    if(o >= t) b.complete++;
+  }
+
+  // Aggrega le carte per rarità, tipo di prodotto e set. "Copie" = somma di min(possedute, obiettivo),
+  // la stessa misura dell'header, quindi i totali tornano sempre con la percentuale globale.
+  function computeStats(cards){
+    var total = statBucket(), leaders = statBucket();
+    var byRarity = {}, byCategory = {}, bySet = {};
+    cards.forEach(function(c){
+      statAdd(total, c);
+      if(c.leader) statAdd(leaders, c);
+      var r = c.rarity || '';
+      statAdd(byRarity[r] || (byRarity[r] = statBucket()), c);
+      var cat = setCategory(c.code) || 'other';
+      statAdd(byCategory[cat] || (byCategory[cat] = statBucket()), c);
+      statAdd(bySet[c.set] || (bySet[c.set] = statBucket()), c);
+    });
+    var setNames = Object.keys(bySet);
+    var setsComplete = setNames.filter(function(n){ return bySet[n].owned >= bySet[n].target; }).length;
+    var almost = setNames.filter(function(n){ return bySet[n].owned < bySet[n].target; })
+      .map(function(n){ var b = bySet[n]; return { name: n, missing: b.target - b.owned, pct: Math.round(b.owned / b.target * 100) }; })
+      .sort(function(a,b){ return a.missing - b.missing || a.name.localeCompare(b.name); })
+      .slice(0, ALMOST_DONE_MAX);
+    var rarityKeys = Object.keys(byRarity).sort(function(a,b){
+      if(a === '' || b === '') return a === '' ? 1 : -1;
+      var ia = RARITY_ORDER.indexOf(a), ib = RARITY_ORDER.indexOf(b);
+      if(ia === -1 && ib === -1) return a.localeCompare(b);
+      if(ia === -1) return 1;
+      if(ib === -1) return -1;
+      return ia - ib;
+    });
+    return { total: total, leaders: leaders, setsTotal: setNames.length, setsComplete: setsComplete,
+             almost: almost, byRarity: byRarity, rarityKeys: rarityKeys, byCategory: byCategory };
+  }
+
+  function pctOf(b){ return b.target > 0 ? Math.round(b.owned / b.target * 100) : 0; }
+
+  function statRow(label, b){
+    var pct = pctOf(b);
+    return '<div class="stat-row"><span class="stat-label">' + escapeHtml(label) + '</span>'
+      + '<div class="stat-bar"><div class="stat-fill' + (pct >= 100 ? ' full' : '') + '" style="width:' + pct + '%"></div></div>'
+      + '<span class="stat-val">' + b.owned + '/' + b.target + '</span></div>';
+  }
+
+  function fmtPct(x){ return x.toFixed(1).replace('.', ','); }
+  function fmtDay(key){ return key.slice(8, 10) + '/' + key.slice(5, 7); }
+
+  // Grafico a linee della percentuale di completamento per giorno, in SVG inline.
+  // L'asse verticale si adatta ai dati: su 0-100 le variazioni di pochi punti sarebbero invisibili.
+  function historyChart(history){
+    var days = Object.keys(history).sort().filter(function(d){ return history[d].target > 0; });
+    if(days.length < 2){
+      return '<p class="stats-note">Lo storico parte da oggi: servono almeno due giorni con modifiche per mostrare l\'andamento.</p>';
+    }
+    var pts = days.map(function(d){ return history[d].owned / history[d].target * 100; });
+    var lo = Math.max(0, Math.floor(Math.min.apply(null, pts)) - 2);
+    var hi = Math.min(100, Math.ceil(Math.max.apply(null, pts)) + 2);
+    if(hi - lo < 5) hi = Math.min(100, lo + 5);
+    var W = 320, H = 130, L = 30, R = 8, T = 8, B = 20;
+    var iw = W - L - R, ih = H - T - B;
+    var x = function(i){ return L + (days.length === 1 ? 0 : i / (days.length - 1) * iw); };
+    var y = function(v){ return T + (1 - (v - lo) / (hi - lo)) * ih; };
+    var line = pts.map(function(v, i){ return (i ? 'L' : 'M') + x(i).toFixed(1) + ' ' + y(v).toFixed(1); }).join(' ');
+    var area = line + ' L' + x(days.length - 1).toFixed(1) + ' ' + (T + ih) + ' L' + x(0).toFixed(1) + ' ' + (T + ih) + ' Z';
+    var svg = '<svg class="chart" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Andamento del completamento nel tempo">';
+    [lo, hi].forEach(function(v){
+      svg += '<line class="chart-grid" x1="' + L + '" x2="' + (W - R) + '" y1="' + y(v).toFixed(1) + '" y2="' + y(v).toFixed(1) + '"/>'
+        + '<text class="chart-text" x="' + (L - 4) + '" y="' + (y(v) + 3).toFixed(1) + '" text-anchor="end">' + Math.round(v) + '%</text>';
+    });
+    svg += '<path class="chart-area" d="' + area + '"/><path class="chart-line" d="' + line + '"/>';
+    if(days.length <= 40){
+      pts.forEach(function(v, i){ svg += '<circle class="chart-dot" cx="' + x(i).toFixed(1) + '" cy="' + y(v).toFixed(1) + '" r="1.8"/>'; });
+    }
+    svg += '<text class="chart-text" x="' + L + '" y="' + (H - 5) + '">' + fmtDay(days[0]) + '</text>'
+      + '<text class="chart-text" x="' + (W - R) + '" y="' + (H - 5) + '" text-anchor="end">' + fmtDay(days[days.length - 1]) + '</text></svg>';
+    var delta = pts[pts.length - 1] - pts[0];
+    return svg + '<p class="stats-note">Dal ' + fmtDay(days[0]) + ': ' + fmtPct(pts[0]) + '% → ' + fmtPct(pts[pts.length - 1]) + '% ('
+      + (delta >= 0 ? '+' : '') + fmtPct(delta) + ' punti).</p>';
+  }
+
+  function renderStats(){
+    var container = document.getElementById('list-container');
+    if(state.cards.length === 0){
+      container.innerHTML = '<div class="empty-state"><p><b>Nessuna statistica da mostrare.</b></p>'
+        + '<p>Aggiungi delle carte dalla checklist per vedere i progressi.</p></div>';
+      return;
+    }
+    var st = computeStats(state.cards);
+    var html = '<div class="stats-list">';
+
+    html += '<div class="stats-section"><h3>Traguardi</h3><div class="stat-tiles">'
+      + '<div class="stat-tile"><b>' + st.setsComplete + '/' + st.setsTotal + '</b><span>Set completi</span></div>'
+      + '<div class="stat-tile"><b>' + st.total.complete + '/' + st.total.cards + '</b><span>Carte complete</span></div>'
+      + '<div class="stat-tile"><b>' + st.leaders.complete + '/' + st.leaders.cards + '</b><span>Leader completi</span></div>'
+      + '</div></div>';
+
+    html += '<div class="stats-section"><h3>Set quasi completi</h3>';
+    if(st.almost.length === 0){
+      html += '<p class="stats-note" style="margin:0;">Tutti i set sono completi.</p>';
+    } else {
+      st.almost.forEach(function(a){
+        html += '<button class="almost-row" data-goto-set="' + escapeHtml(a.name) + '">'
+          + '<div class="almost-top"><span class="almost-name">' + escapeHtml(a.name) + '</span>'
+          + '<span class="almost-missing">mancano ' + a.missing + ' · ' + a.pct + '%</span></div>'
+          + '<div class="stat-bar"><div class="stat-fill" style="width:' + a.pct + '%"></div></div></button>';
+      });
+    }
+    html += '</div>';
+
+    html += '<div class="stats-section"><h3>Per rarità</h3>';
+    st.rarityKeys.forEach(function(r){ html += statRow(r || '—', st.byRarity[r]); });
+    html += '</div>';
+
+    html += '<div class="stats-section"><h3>Per tipo di prodotto</h3>';
+    CATEGORY_LABELS.forEach(function(c){ if(st.byCategory[c[0]]) html += statRow(c[1], st.byCategory[c[0]]); });
+    html += '</div>';
+
+    html += '<div class="stats-section"><h3>Andamento</h3>' + historyChart(meta.history) + '</div>';
+    html += '</div>';
+    container.innerHTML = html;
+  }
+
+  function setView(v){
+    state.view = v;
+    document.querySelectorAll('.chip[data-view]').forEach(function(c){
+      c.classList.toggle('active', c.getAttribute('data-view') === v);
+    });
+    document.body.classList.toggle('wishlist-mode', v === 'wishlist');
+    document.body.classList.toggle('stats-mode', v === 'stats');
+    renderList();
+  }
+
+  // Dalle statistiche apre la checklist già filtrata su un set, con il set aperto.
+  function goToSet(name){
+    state.filter = 'all'; state.categoryFilter = ''; state.rarityFilter = ''; state.search = '';
+    state.setFilter = name;
+    state.collapsed[name] = false;
+    document.querySelectorAll('.chip[data-filter]').forEach(function(c){ c.classList.toggle('active', c.getAttribute('data-filter') === 'all'); });
+    document.querySelectorAll('.chip[data-category]').forEach(function(c){ c.classList.toggle('active', c.getAttribute('data-category') === ''); });
+    document.getElementById('rarity-filter').value = '';
+    document.getElementById('set-filter').value = name;
+    document.getElementById('search').value = '';
+    setView('checklist');
+    window.scrollTo(0, 0);
+  }
+
   function renderWishlist(){
     var container = document.getElementById('list-container');
     var q = state.search.trim().toLowerCase();
@@ -708,6 +1042,7 @@ OP01-003 | Nami | OP-01 Romance Dawn | C"></textarea>
 
   function renderList(){
     if(state.view === 'wishlist'){ renderWishlist(); return; }
+    if(state.view === 'stats'){ renderStats(); return; }
     var container = document.getElementById('list-container');
     if(state.cards.length === 0){
       container.innerHTML = '<div class="empty-state">'
@@ -815,20 +1150,19 @@ OP01-003 | Nami | OP-01 Romance Dawn | C"></textarea>
 
   document.querySelectorAll('.chip[data-view]').forEach(function(chip){
     chip.addEventListener('click', function(){
-      document.querySelectorAll('.chip[data-view]').forEach(function(c){ c.classList.remove('active'); });
-      chip.classList.add('active');
-      state.view = chip.getAttribute('data-view');
-      document.body.classList.toggle('wishlist-mode', state.view === 'wishlist');
-      renderList();
+      setView(chip.getAttribute('data-view'));
     });
   });
 
   document.getElementById('list-container').addEventListener('click', function(e){
+    var goto = e.target.closest('[data-goto-set]');
+    if(goto){ goToSet(goto.getAttribute('data-goto-set')); return; }
     var wish = e.target.closest('.wish-btn');
     if(wish){
       var wc = findCard(wish.getAttribute('data-wish'));
       if(wc){
         if(wc.wishlist) delete wc.wishlist; else wc.wishlist = true;
+        touch(wc);
         scheduleSave();
         updateWishTab();
         renderList();
@@ -851,6 +1185,7 @@ OP01-003 | Nami | OP-01 Romance Dawn | C"></textarea>
       if(card){
         card.owned = (card.owned === idx + 1) ? idx : idx + 1;
         clampOwned(card);
+        touch(card);
         scheduleSave();
         render();
       }
@@ -968,6 +1303,8 @@ OP01-003 | Nami | OP-01 Romance Dawn | C"></textarea>
 
   document.getElementById('clear-btn').addEventListener('click', function(){
     if(confirm('Svuotare tutta la collezione? Questa azione non è reversibile.')){
+      var now = Date.now();
+      state.cards.forEach(function(c){ meta.deleted[c.code] = now; });
       state.cards = [];
       scheduleSave();
       render();
@@ -979,7 +1316,7 @@ OP01-003 | Nami | OP-01 Romance Dawn | C"></textarea>
     var token = document.getElementById('gh-token').value.trim();
     if(!token){ showMsg('gh-msg', 'Inserisci il token.', false); return; }
     showMsg('gh-msg', 'Creazione del gist in corso…', true);
-    ghCreateGist(token, state.cards).then(function(gistId){
+    ghCreateGist(token, localSnapshot()).then(function(gistId){
       ghSaveCreds(token, gistId);
       ghShowConnected(gistId);
       ghSetStatus('Gist creato e collegato alle ' + ghTimestamp());
@@ -993,29 +1330,21 @@ OP01-003 | Nami | OP-01 Romance Dawn | C"></textarea>
     var gistId = document.getElementById('gh-gistid').value.trim();
     if(!token || !gistId){ showMsg('gh-msg', 'Inserisci token e Gist ID.', false); return; }
     showMsg('gh-msg', 'Connessione in corso…', true);
-    ghFetchGist(token, gistId).then(function(cards){
-      state.cards = cards;
+    ghFetchGist(token, gistId).then(function(remote){
+      if(state.cards.length && !confirm('Questo dispositivo contiene già delle carte. Unirle con quelle del Gist? Le carte più recenti vincono, nessuna viene persa.')){
+        showMsg('gh-msg', 'Collegamento annullato.', false);
+        return;
+      }
       ghSaveCreds(token, gistId);
-      saveData();
-      render();
       ghShowConnected(gistId);
-      ghSetStatus('Collegato e sincronizzato alle ' + ghTimestamp());
+      return ghSync();
     }).catch(function(err){
       showMsg('gh-msg', err.message, false);
     });
   });
 
   document.getElementById('gh-sync-now').addEventListener('click', function(){
-    var creds = ghCreds();
-    ghSetStatus('Aggiornamento…');
-    ghFetchGist(creds.token, creds.gistId).then(function(cards){
-      state.cards = cards;
-      saveData();
-      render();
-      ghSetStatus('Sincronizzato alle ' + ghTimestamp());
-    }).catch(function(err){
-      ghSetStatus('Errore: ' + err.message);
-    });
+    ghSync();
   });
 
   document.getElementById('gh-disconnect').addEventListener('click', function(){
@@ -1086,6 +1415,10 @@ OP01-003 | Nami | OP-01 Romance Dawn | C"></textarea>
 
   loadData();
   ghInit();
+  // Tornando all'app (tipico su mobile) si riallinea con il Gist, al massimo ogni 30 secondi.
+  document.addEventListener('visibilitychange', function(){
+    if(document.visibilityState === 'visible' && Date.now() - ghLastSync > GH_SYNC_MIN_INTERVAL) ghSync();
+  });
   window.addEventListener('resize', function(){ renderList(); });
 })();
 </script>
