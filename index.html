@@ -150,17 +150,7 @@
   .square svg{ width:14px; height:14px; opacity:0; }
   .square.filled svg{ opacity:1; }
 
-  /* DESIDERI (righe) */
-  .card-list{ display:grid; grid-template-columns:repeat(auto-fill, minmax(min(100%, 300px), 1fr)); gap: 10px; }
-  .card-row{
-    background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius);
-    padding: 10px 12px; display:flex; flex-direction:column; gap: 6px;
-  }
-  .card-top{ display:flex; align-items:baseline; gap: 8px; min-width:0; }
-  .card-top[data-detail]{ cursor:pointer; }
-  .card-name{ font-size: 14.5px; color: var(--text); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; flex:1; min-width:0; }
-  .card-bottom{ display:flex; align-items:center; justify-content: space-between; gap: 10px; }
-  .card-set{ font-size: 11.5px; color: var(--text-muted); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  /* DESIDERI */
   .wish-btn{
     flex-shrink:0; width: 28px; height: 28px; padding:0; border:none; background:transparent; color: var(--text-muted);
     display:flex; align-items:center; justify-content:center; align-self:center; margin: -4px -4px -4px 0;
@@ -168,9 +158,6 @@
   .wish-btn svg{ width:20px; height:20px; fill:none; stroke: currentColor; stroke-width: 2; stroke-linejoin: round; }
   .wish-btn.active{ color: var(--gold); }
   .wish-btn.active svg{ fill: currentColor; }
-  .wish-row.done{ opacity: .5; }
-  .wish-missing{ font-size: 12.5px; font-weight: 600; color: var(--gold); flex-shrink:0; }
-  .wish-row.done .wish-missing{ color: var(--teal); }
 
   /* STATISTICHE */
   .stats-list{ display:grid; grid-template-columns:repeat(auto-fit, minmax(min(100%, 420px), 1fr)); gap:16px; align-items:start; }
@@ -1178,31 +1165,40 @@ OP01-003 | Nami | OP-01 Romance Dawn | C"></textarea>
       container.innerHTML = '<div class="empty-state"><p>Nessuna carta dei desideri corrisponde alla ricerca.</p></div>';
       return;
     }
-    // Da comprare prima (set più recente → meno recente, poi codice); le complete in fondo.
-    items.sort(function(a,b){
-      var da = a.owned >= target(a) ? 1 : 0, db = b.owned >= target(b) ? 1 : 0;
-      if(da !== db) return da - db;
-      var ra = setGroupRank([a]), rb = setGroupRank([b]);
-      if(ra !== rb) return ra - rb;
-      return a.code.localeCompare(b.code);
+    // Come la checklist: un gruppo per set (più recente prima), con galleria quando è aperto.
+    // Dentro il set le carte da comprare vengono prima, le complete in fondo.
+    var groups = {};
+    items.forEach(function(c){ (groups[c.set] || (groups[c.set] = [])).push(c); });
+    var order = Object.keys(groups);
+    order.forEach(function(name){
+      groups[name].sort(function(a,b){
+        var da = a.owned >= target(a) ? 1 : 0, db = b.owned >= target(b) ? 1 : 0;
+        return da !== db ? da - db : a.code.localeCompare(b.code);
+      });
     });
-    var html = '<div class="card-list wish-list">';
-    items.forEach(function(c){
-      var missing = target(c) - Math.min(c.owned, target(c));
-      html += '<div class="card-row wish-row' + (missing === 0 ? ' done' : '') + '">';
-      html += '<div class="card-top" data-detail="' + escapeHtml(c.code) + '">';
-      html += '<span class="card-code">' + escapeHtml(c.code) + '</span>';
-      html += '<span class="card-name">' + escapeHtml(c.name) + '</span>';
-      if(c.rarity) html += '<span class="rarity-pill ' + rarityClass(c.rarity) + '">' + escapeHtml(c.rarity) + '</span>';
-      if(c.leader) html += '<span class="leader-pill">Leader</span>';
-      html += wishBtn(c);
+    order.sort(function(a,b){
+      var ra = setGroupRank(groups[a]), rb = setGroupRank(groups[b]);
+      return ra !== rb ? ra - rb : a.localeCompare(b);
+    });
+    var single = !!state.wishSetFilter;
+    var html = '';
+    order.forEach(function(name){
+      var cards = groups[name], key = 'wish:' + name;
+      var collapsed = !single && isCollapsed(key);
+      html += '<div class="set-group">';
+      if(!single) html += setHeadHtml(name, key, collapsed, cards.length + (cards.length === 1 ? ' carta' : ' carte'));
+      if(!collapsed) html += '<div class="grid">' + cards.map(tileHtml).join('') + '</div>';
       html += '</div>';
-      html += '<div class="card-bottom"><span class="card-set">' + escapeHtml(c.set) + '</span>';
-      html += '<span class="wish-missing">' + (missing === 0 ? 'Completa' : 'Mancano ' + missing + ' (' + Math.min(c.owned, target(c)) + '/' + target(c) + ')') + '</span>';
-      html += '</div></div>';
     });
-    html += '</div>';
     container.innerHTML = html;
+  }
+
+  // Intestazione comprimibile di un set; key distingue lo stato aperto/chiuso di checklist e desideri.
+  function setHeadHtml(name, key, collapsed, countText){
+    return '<div class="set-head' + (collapsed ? '' : ' pinned') + '" data-ckey="' + escapeHtml(key) + '">'
+      + '<div class="set-head-left"><svg class="chevron' + (collapsed ? ' collapsed' : '') + '" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>'
+      + '<span class="set-name">' + escapeHtml(name) + '</span></div>'
+      + '<span class="set-count">' + countText + '</span></div>';
   }
 
   function imgFor(code){
@@ -1256,10 +1252,7 @@ OP01-003 | Nami | OP-01 Romance Dawn | C"></textarea>
       if(!single){
         var setOwned = 0, setTarget = 0;
         cards.forEach(function(c){ setOwned += Math.min(c.owned, target(c)); setTarget += target(c); });
-        html += '<div class="set-head' + (collapsed ? '' : ' pinned') + '" data-set="' + escapeHtml(setName) + '">';
-        html += '<div class="set-head-left"><svg class="chevron' + (collapsed?' collapsed':'') + '" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>';
-        html += '<span class="set-name">' + escapeHtml(setName) + '</span></div>';
-        html += '<span class="set-count">' + setOwned + '/' + setTarget + '</span></div>';
+        html += setHeadHtml(setName, setName, collapsed, setOwned + '/' + setTarget);
       }
       if(!collapsed) html += '<div class="grid">' + cards.map(tileHtml).join('') + '</div>';
       html += '</div>';
@@ -1358,8 +1351,8 @@ OP01-003 | Nami | OP-01 Romance Dawn | C"></textarea>
     }
     var setHead = e.target.closest('.set-head');
     if(setHead){
-      var name = setHead.getAttribute('data-set');
-      state.collapsed[name] = !isCollapsed(name);
+      var key = setHead.getAttribute('data-ckey');
+      state.collapsed[key] = !isCollapsed(key);
       renderList();
       return;
     }
