@@ -7,6 +7,8 @@
 <style>
   :root{
     --bg: #0C1B2A;
+    --bar: #091522;
+    --rail: #0F2336;
     --panel: #122A3F;
     --panel-2: #17334B;
     --border: #24425C;
@@ -23,72 +25,112 @@
   }
   *{ box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
   html,body{ margin:0; padding:0; background:var(--bg); color:var(--text); font-family:var(--font-body); }
-  body{ padding-bottom: 4rem; }
-  .wrap{ max-width: 480px; margin: 0 auto; padding: 0 14px; }
-  button{ font-family: inherit; cursor:pointer; }
-  input, select, textarea{ font-family: inherit; }
+  button{ font-family: inherit; color: inherit; cursor:pointer; }
+  input, select, textarea{ font-family: inherit; color: inherit; }
+  .i{ width:20px; height:20px; flex:0 0 auto; fill:none; stroke:currentColor; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; display:block; }
 
-  /* HEADER */
-  .hero{ position: sticky; top:0; z-index: 10; background: var(--bg); padding: 18px 0 10px; border-bottom: 1px solid var(--border); }
-  .hero-top{ display:flex; align-items:center; justify-content: space-between; gap: 12px; }
-  .hero-title{ font-family: var(--font-display); font-size: 22px; margin:0; letter-spacing: 0.2px; }
-  .hero-sub{ margin: 2px 0 0; font-size: 13px; color: var(--text-muted); }
-  .seal{
-    flex-shrink:0; width: 54px; height: 54px; border-radius: 50%;
-    background: radial-gradient(circle at 35% 30%, #E6C070, var(--gold) 55%, var(--gold-dim) 100%);
-    display:flex; align-items:center; justify-content:center; flex-direction:column;
-    border: 2px solid #7A5B22; color:#3A2A0C;
-  }
-  .seal b{ font-size: 15px; line-height:1; font-family: var(--font-display); }
-  .seal span{ font-size: 8px; letter-spacing: 0.5px; margin-top:1px; }
-  .meter{ margin-top: 12px; height: 8px; border-radius: 6px; background: var(--panel); overflow:hidden; border: 1px solid var(--border); }
-  .meter-fill{ height:100%; background: linear-gradient(90deg, var(--gold-dim), var(--gold)); transition: width .3s ease; }
-  .stats-row{ display:flex; justify-content: space-between; margin-top: 6px; font-size: 12px; color: var(--text-muted); }
+  /* LAYOUT: barra in alto + colonna set + contenuto (desktop); barra in basso + selettore set (telefono) */
+  .shell{ min-height:100vh; min-height:100dvh; display:flex; flex-direction:column; }
+  .top{ display:flex; align-items:center; gap:20px; flex-wrap:wrap; padding:14px 28px; border-bottom:1px solid var(--border); background:var(--bar); }
+  .brand{ display:flex; align-items:center; gap:10px; flex:1 1 200px; }
+  .logo{ width:32px; height:32px; border-radius:9px; background:var(--gold); color:#2B2107; font:700 13px var(--font-display); display:flex; align-items:center; justify-content:center; }
+  .brand b{ font:400 18px var(--font-display); }
+  .switch{ display:flex; gap:4px; padding:4px; border-radius:999px; background:var(--bg); border:1px solid var(--border); }
+  .sw{ display:flex; align-items:center; gap:8px; height:42px; padding:0 20px; border:0; border-radius:999px; background:none; color:var(--text-muted); font-weight:600; font-size:14.5px; }
+  .sw.on{ background:var(--gold); color:#2B2107; }
+  .count{ font-size:11.5px; background:var(--panel-2); color:var(--text); border-radius:99px; padding:0 7px; }
+  .sw.on .count{ background:rgba(43,33,7,.18); color:#2B2107; }
+  .count:empty{ display:none; }
+  .tools{ flex:1 1 200px; display:flex; align-items:center; justify-content:flex-end; gap:12px; }
+  .ibtn{ width:40px; height:40px; border-radius:50%; border:1px solid var(--border); background:none; color:var(--text-muted); display:flex; align-items:center; justify-content:center; }
+  .ibtn.on{ background:var(--gold); border-color:var(--gold); color:#2B2107; }
+  .av{ width:34px; height:34px; border-radius:50%; background:var(--teal); color:#08201C; font-weight:700; display:flex; align-items:center; justify-content:center; }
+  .av[hidden]{ display:none; }
 
-  /* SEARCH / FILTERS */
-  .controls{ padding: 12px 0 6px; display:flex; flex-direction:column; gap: 8px; }
-  .search-box{ position: relative; }
-  .search-box input{
-    width:100%; padding: 10px 12px; border-radius: var(--radius); border: 1px solid var(--border);
-    background: var(--panel); color: var(--text); font-size: 15px; outline:none;
-  }
-  .search-box input:focus{ border-color: var(--gold-dim); }
-  .filter-row{ display:flex; gap: 6px; flex-wrap: wrap; }
-  .chip{
-    padding: 6px 12px; border-radius: 999px; border: 1px solid var(--border); background: var(--panel);
-    color: var(--text-muted); font-size: 12.5px; white-space:nowrap;
-  }
-  .chip.active{ background: var(--gold); border-color: var(--gold); color: #2B2107; font-weight: 600; }
-  select.set-select{
-    padding: 7px 10px; border-radius: var(--radius); border: 1px solid var(--border); background: var(--panel);
-    color: var(--text); font-size: 12.5px; max-width: 100%;
-  }
+  .body{ display:flex; flex:1; align-items:stretch; min-height:0; }
+  .sets{ flex:0 0 340px; border-right:1px solid var(--border); background:var(--rail); }
+  .sets-in{ position:sticky; top:0; max-height:100vh; max-height:100dvh; overflow-y:auto; padding:20px 16px; display:flex; flex-direction:column; gap:8px; }
+  .sets-head{ display:none; align-items:center; justify-content:space-between; }
+  .sets-head h2{ margin:0; font:400 20px var(--font-display); }
+  .sbox{ display:flex; align-items:center; gap:8px; height:40px; padding:0 12px; border-radius:10px; border:1px solid var(--border); background:var(--bg); color:var(--text-muted); margin-bottom:8px; }
+  .sbox .i{ width:16px; height:16px; }
+  .sbox input{ flex:1; min-width:0; border:0; background:none; outline:none; color:var(--text); font-size:14px; }
+  .set{ display:grid; grid-template-columns:auto 1fr auto; align-items:baseline; gap:4px 10px; width:100%; padding:11px 12px; border-radius:12px; border:1px solid transparent; background:none; text-align:left; }
+  .set.on{ background:var(--panel-2); border-color:var(--gold-dim); }
+  .set .c{ font:12.5px var(--font-mono); color:var(--gold); }
+  .set .n{ white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-weight:600; font-size:14px; min-width:0; }
+  .set .v{ color:var(--text-muted); font-size:12.5px; font-variant-numeric:tabular-nums; }
+  .set .bar{ grid-column:1 / -1; height:5px; border-radius:5px; background:var(--bg); overflow:hidden; }
+  .set.on .bar{ background:var(--panel); }
+  .set .bar i{ display:block; height:100%; background:linear-gradient(90deg, var(--gold-dim), var(--gold)); }
+  .set .bar i.full{ background:var(--teal); }
+  .set .c:empty, .pick .c:empty{ display:none; }
+  .set .c:empty + .n, .pick .c:empty + .n{ grid-column:1 / 3; }
+  .sets-back{ display:none; }
 
-  /* SET GROUPS */
-  .set-group{ margin-top: 14px; }
-  .set-head{
-    display:flex; align-items:center; justify-content: space-between; padding: 4px 2px; cursor:pointer;
+  .detail{ flex:1 1 0; min-width:0; padding:24px 28px 80px; display:flex; flex-direction:column; gap:18px; }
+  .dh{ display:flex; align-items:baseline; gap:14px; flex-wrap:wrap; }
+  .dh h1{ margin:0; font:400 28px var(--font-display); }
+  .dh h1 b{ color:var(--gold); font-weight:400; }
+  .dh span{ color:var(--text-muted); font-size:13px; font-variant-numeric:tabular-nums; }
+  .dh .prog{ width:200px; height:6px; border-radius:6px; background:var(--panel-2); overflow:hidden; align-self:center; }
+  .dh .prog i{ display:block; height:100%; width:0; background:linear-gradient(90deg, var(--gold-dim), var(--gold)); transition:width .3s ease; }
+  .pick{ display:none; grid-template-columns:auto 1fr auto; align-items:center; gap:2px 10px; width:100%; padding:12px 14px; border-radius:14px; border:1px solid var(--border); background:var(--panel); text-align:left; }
+  .pick .c{ font:400 22px var(--font-display); color:var(--gold); }
+  .pick .n{ font-weight:600; font-size:15px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; min-width:0; }
+  .pick .i{ color:var(--text-muted); }
+  .pick .v{ grid-column:1 / -1; display:flex; align-items:center; gap:10px; margin-top:6px; color:var(--text-muted); font-size:12px; font-variant-numeric:tabular-nums; }
+  .pick .bar{ flex:1; height:5px; border-radius:5px; background:var(--bg); overflow:hidden; }
+  .pick .bar i{ display:block; height:100%; width:0; background:linear-gradient(90deg, var(--gold-dim), var(--gold)); }
+
+  /* FILTRI: bordo verde acqua = filtro attivo (l'oro è riservato alla navigazione) */
+  .tb{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+  .search{ display:flex; align-items:center; gap:10px; height:40px; padding:0 14px; border:1px solid var(--border); border-radius:10px; background:var(--panel); color:var(--text-muted); flex:1 1 260px; min-width:200px; }
+  .search:focus-within{ border-color:var(--gold-dim); }
+  .search input{ flex:1; border:0; background:none; outline:none; color:var(--text); font-size:15px; min-width:0; }
+  .seg{ display:flex; padding:3px; gap:2px; border-radius:9px; background:var(--panel); border:1px solid var(--border); }
+  .seg button{ border:0; background:none; color:var(--text-muted); padding:6px 13px; border-radius:7px; font-size:13px; font-weight:600; }
+  .seg button.on{ background:var(--panel-2); color:var(--text); box-shadow:0 0 0 1px var(--border); }
+  select.sel{
+    appearance:none; -webkit-appearance:none; height:40px; padding:0 34px 0 12px; border-radius:9px; border:1px solid var(--border);
+    background:var(--panel) url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%238CA3B5' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M6 9l6 6 6-6'/></svg>") no-repeat right 10px center / 16px;
+    color:var(--text-muted); font-size:13px; max-width:100%;
   }
-  .set-head.pinned{
-    position: sticky; z-index: 8; background: var(--bg); padding: 8px 2px; margin: 0 -14px; padding-left: 14px; padding-right: 14px;
-    border-bottom: 1px solid var(--border);
-  }
+  select.sel.on{ border-color:var(--teal); color:var(--teal); }
+  .reset{ background:none; border:0; color:var(--text-muted); text-decoration:underline; font-size:13px; padding:0 4px; height:40px; }
+  .reset[hidden]{ display:none; }
+  .wf{ display:contents; }
+  body:not(.view-checklist) .checklist-only{ display:none !important; }
+  body:not(.view-wishlist) .wishlist-only{ display:none !important; }
+  body.view-stats #tb, body.view-settings #tb{ display:none; }
+  body.view-settings #list-container{ display:none; }
+  body:not(.view-settings) #settings-pane{ display:none; }
+  body:not(.view-checklist) .sets{ display:none; }
+
+  /* SET (vista "Tutti i set": gruppi comprimibili) */
+  .set-group{ display:flex; flex-direction:column; gap:12px; margin-bottom:12px; }
+  .set-head{ display:flex; align-items:center; justify-content:space-between; gap:10px; padding:12px 14px; cursor:pointer; background:var(--panel); border:1px solid var(--border); border-radius:var(--radius); }
+  .set-head.pinned{ position:sticky; top:0; z-index:8; background:var(--bg); }
   .set-head-left{ display:flex; align-items:center; gap:8px; min-width:0; }
-  .set-name{ font-size: 14px; font-weight: 600; color: var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-  .set-count{ font-size: 12px; color: var(--text-muted); flex-shrink:0; }
+  .set-name{ font-size:14px; font-weight:600; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .set-count{ font-size:12px; color:var(--text-muted); flex-shrink:0; font-variant-numeric:tabular-nums; }
   .chevron{ transition: transform .2s ease; color: var(--text-muted); flex-shrink:0; }
   .chevron.collapsed{ transform: rotate(-90deg); }
 
-  /* CARD ROW */
-  .card-list{ display:flex; flex-direction:column; gap: 6px; margin-top: 6px; }
-  .card-row{
-    background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius);
-    padding: 10px 12px; display:flex; flex-direction:column; gap: 6px;
-  }
-  .card-row.complete{ border-color: var(--gold-dim); }
-  .card-top{ display:flex; align-items:baseline; gap: 8px; min-width:0; }
-  .card-code{ font-family: var(--font-mono); font-size: 12px; color: var(--gold); flex-shrink:0; }
-  .card-name{ font-size: 14.5px; color: var(--text); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; flex:1; min-width:0; }
+  /* GALLERIA */
+  .grid{ display:grid; grid-template-columns:repeat(auto-fill, minmax(176px, 1fr)); gap:16px; }
+  .tile{ background:var(--panel); border:1px solid var(--border); border-radius:12px; padding:8px; display:flex; flex-direction:column; gap:10px; min-width:0; }
+  .tile.complete{ border-color:var(--gold-dim); }
+  .art{ position:relative; aspect-ratio:600 / 838; border-radius:8px; background:repeating-linear-gradient(135deg, #17334B 0 10px, #143049 10px 20px); display:flex; align-items:flex-end; justify-content:center; padding:10px; overflow:hidden; cursor:pointer; }
+  .art img{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; display:block; }
+  .art img.broken{ display:none; }
+  .art .ac{ position:relative; font:12px var(--font-mono); color:var(--text-muted); background:rgba(9,21,34,.78); padding:2px 8px; border-radius:6px; }
+  .art .wish-btn{ position:absolute; top:6px; right:6px; width:40px; height:40px; margin:0; border-radius:50%; background:rgba(9,21,34,.78); }
+  .meta{ padding:0 4px 4px; display:flex; flex-direction:column; gap:8px; min-width:0; }
+  .name{ white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-size:14.5px; cursor:pointer; }
+  .r2{ display:flex; align-items:center; gap:6px; }
+  .r2 .squares{ margin-left:auto; gap:4px; }
+  .r2 .square{ width:24px; height:24px; }
   .leader-pill{
     flex-shrink:0; font-size: 10.5px; padding: 1px 7px; border-radius: 999px; background: var(--teal); color:#0C2420; font-weight:600;
   }
@@ -98,20 +140,27 @@
   }
   .rarity-pill.r-rare{ border-color: var(--teal); color: var(--teal); }
   .rarity-pill.r-super{ background: var(--gold); border-color: var(--gold); color:#2B2107; }
-  .card-bottom{ display:flex; align-items:center; justify-content: space-between; gap: 10px; }
-  .card-set{ font-size: 11.5px; color: var(--text-muted); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .card-code{ font-family: var(--font-mono); font-size: 12px; color: var(--gold); flex-shrink:0; }
   .squares{ display:flex; gap: 5px; flex-shrink:0; }
   .square{
-    width: 26px; height: 26px; border-radius: 6px; border: 1.5px solid var(--border); background: var(--panel-2);
+    width: 26px; height: 26px; border-radius: 6px; border: 1.5px solid var(--border); background: var(--panel-2); padding:0;
     display:flex; align-items:center; justify-content:center; transition: background .15s, border-color .15s;
   }
   .square.filled{ background: var(--gold); border-color: var(--gold); }
   .square svg{ width:14px; height:14px; opacity:0; }
   .square.filled svg{ opacity:1; }
 
-  /* WISHLIST */
-  .view-row{ display:flex; gap: 6px; }
-  .view-row .chip{ flex:1; padding: 8px 12px; font-size: 13.5px; }
+  /* DESIDERI (righe) */
+  .card-list{ display:grid; grid-template-columns:repeat(auto-fill, minmax(min(100%, 300px), 1fr)); gap: 10px; }
+  .card-row{
+    background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 10px 12px; display:flex; flex-direction:column; gap: 6px;
+  }
+  .card-top{ display:flex; align-items:baseline; gap: 8px; min-width:0; }
+  .card-top[data-detail]{ cursor:pointer; }
+  .card-name{ font-size: 14.5px; color: var(--text); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; flex:1; min-width:0; }
+  .card-bottom{ display:flex; align-items:center; justify-content: space-between; gap: 10px; }
+  .card-set{ font-size: 11.5px; color: var(--text-muted); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   .wish-btn{
     flex-shrink:0; width: 28px; height: 28px; padding:0; border:none; background:transparent; color: var(--text-muted);
     display:flex; align-items:center; justify-content:center; align-self:center; margin: -4px -4px -4px 0;
@@ -119,21 +168,29 @@
   .wish-btn svg{ width:20px; height:20px; fill:none; stroke: currentColor; stroke-width: 2; stroke-linejoin: round; }
   .wish-btn.active{ color: var(--gold); }
   .wish-btn.active svg{ fill: currentColor; }
-  .wish-list{ margin-top: 12px; }
   .wish-row.done{ opacity: .5; }
   .wish-missing{ font-size: 12.5px; font-weight: 600; color: var(--gold); flex-shrink:0; }
   .wish-row.done .wish-missing{ color: var(--teal); }
-  .wishlist-only{ display:none; }
-  .wishlist-mode .wishlist-only{ display:flex; }
-  .wishlist-mode .checklist-only{ display:none !important; }
 
   /* STATISTICHE */
-  .stats-mode .checklist-only, .stats-mode .wishlist-only, .stats-mode .search-box{ display:none !important; }
-  .stats-list{ margin-top: 12px; display:flex; flex-direction:column; gap: 14px; }
-  .stats-section{ background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px; }
-  .stats-section h3{ margin:0 0 10px; font-size: 14px; font-family: var(--font-display); font-weight: normal; color: var(--gold); }
+  .stats-list{ display:grid; grid-template-columns:repeat(auto-fit, minmax(min(100%, 420px), 1fr)); gap:16px; align-items:start; }
+  .stats-wide{ grid-column:1 / -1; }
+  .stats-section{ background: var(--panel); border: 1px solid var(--border); border-radius: 14px; padding: 18px 20px; min-width:0; }
+  .stats-section h3{ margin:0 0 12px; font-size: 16px; font-family: var(--font-display); font-weight: normal; color: var(--gold); }
+  .over{ display:flex; flex-wrap:wrap; align-items:center; gap:24px; }
+  .ring{ position:relative; width:140px; height:140px; flex:0 0 auto; }
+  .ring svg{ width:140px; height:140px; display:block; }
+  .ring .track{ fill:none; stroke:var(--panel-2); stroke-width:12; }
+  .ring .val{ fill:none; stroke:var(--gold); stroke-width:12; stroke-linecap:round; }
+  .ring .mid{ position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; }
+  .ring .mid b{ font:400 32px var(--font-display); }
+  .ring .mid small{ color:var(--text-muted); font-size:12px; }
+  .over .sum{ flex:1 1 220px; min-width:0; }
+  .over .big{ margin:0; font:400 22px/1.25 var(--font-display); }
+  .over .sub{ margin:6px 0 0; color:var(--text-muted); }
   .stat-tiles{ display:grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
-  .stat-tile{ background: var(--panel-2); border: 1px solid var(--border); border-radius: 8px; padding: 10px 6px; text-align:center; }
+  .over .stat-tiles{ flex:1 1 360px; }
+  .stat-tile{ background: var(--panel-2); border: 1px solid var(--border); border-radius: 8px; padding: 12px 6px; text-align:center; }
   .stat-tile b{ display:block; font-family: var(--font-display); font-size: 17px; color: var(--gold); font-weight: normal; }
   .stat-tile span{ display:block; margin-top: 2px; font-size: 11px; color: var(--text-muted); }
   .stat-row{ display:grid; grid-template-columns: 78px 1fr auto; align-items:center; gap: 10px; margin-top: 8px; }
@@ -162,22 +219,25 @@
   .empty-state{ text-align:center; padding: 40px 20px; color: var(--text-muted); }
   .empty-state p{ margin: 6px 0 0; font-size: 13.5px; }
 
-  /* MANAGE PANEL */
-  .manage-toggle{
-    width:100%; margin-top: 18px; padding: 11px; border-radius: var(--radius); border: 1px solid var(--border);
-    background: var(--panel); color: var(--text); font-size: 14px; display:flex; align-items:center; justify-content:center; gap:8px;
-  }
-  .manage-panel{ margin-top: 10px; display:none; flex-direction:column; gap: 14px; }
-  .manage-panel.open{ display:flex; }
-  .manage-section{ background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px; }
-  .manage-section h3{ margin:0 0 10px; font-size: 14px; font-family: var(--font-display); font-weight: normal; color: var(--gold); }
+  /* IMPOSTAZIONI */
+  .settings{ display:grid; grid-template-columns:repeat(auto-fit, minmax(min(100%, 440px), 1fr)); gap:16px; align-items:start; }
+  .manage-section{ background: var(--panel); border: 1px solid var(--border); border-radius: 14px; padding: 18px 20px; min-width:0; }
+  .manage-section h3{ margin:0 0 10px; font-size: 16px; font-family: var(--font-display); font-weight: normal; color: var(--gold); }
+  .who{ display:flex; align-items:center; gap:14px; margin-bottom:12px; }
+  .who .av{ width:48px; height:48px; font-size:18px; flex:0 0 auto; }
+  .who b{ display:block; font-size:15px; }
+  .who small{ color:var(--text-muted); }
+  .meta-row{ display:flex; justify-content:space-between; gap:12px; padding:12px 0; margin-top:14px; border-top:1px solid var(--border); color:var(--text-muted); font-size:13px; }
+  .meta-row b{ color:var(--text); font-weight:600; font-variant-numeric:tabular-nums; text-align:right; }
+  .danger-zone{ margin-top:16px; padding-top:16px; border-top:1px solid var(--border); }
+  .danger-zone p{ margin:0 0 10px; color:var(--text-muted); font-size:12.5px; }
   .field{ margin-bottom: 8px; }
   .field label{ display:block; font-size: 11.5px; color: var(--text-muted); margin-bottom: 3px; }
   .field input, .field textarea{
     width:100%; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--border); background: var(--panel-2);
     color: var(--text); font-size: 14px; outline:none;
   }
-  .field textarea{ min-height: 90px; resize: vertical; font-family: var(--font-mono); font-size: 12.5px; }
+  .field textarea{ min-height: 120px; resize: vertical; font-family: var(--font-mono); font-size: 12.5px; }
   .checkbox-row{ display:flex; align-items:center; gap:8px; margin-bottom: 10px; }
   .checkbox-row input{ width:16px; height:16px; }
   .checkbox-row label{ font-size: 13.5px; }
@@ -203,7 +263,6 @@
   .modal{ background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; width:100%; max-width: 400px; }
   .modal h3{ margin:0 0 12px; font-family: var(--font-display); font-size: 17px; font-weight: normal; }
   /* DIALOG DETTAGLI CARTA */
-  .card-top[data-detail]{ cursor:pointer; }
   .detail-modal{ max-height: calc(100vh - 32px); max-height: calc(100dvh - 32px); overflow-y:auto; }
   .detail-figure{
     position:relative; margin: 0 auto 10px; width: 210px; max-width: 70%; aspect-ratio: 600 / 838;
@@ -232,120 +291,173 @@
   .detail-grid dt{ color: var(--text-muted); }
   .detail-grid dd{ margin: 0; color: var(--text); word-break: break-word; }
   .fab{
-    position: fixed; bottom: 18px; right: 18px; width: 52px; height: 52px; border-radius: 50%;
+    position: fixed; bottom: 22px; right: 22px; width: 52px; height: 52px; border-radius: 50%;
     background: var(--gold); border: none; color:#2B2107; display:flex; align-items:center; justify-content:center;
     box-shadow: 0 3px 10px rgba(0,0,0,0.4); z-index: 20;
   }
+  body:not(.view-checklist) .fab{ display:none; }
+
+  /* BARRA IN BASSO (telefono) */
+  .bnav{ display:none; }
+
+  @media (max-width: 860px){
+    .top{ display:none; }
+    .detail{ padding:16px 16px 120px; gap:14px; }
+    .dh h1{ font-size:24px; }
+    body.view-checklist .dh{ display:none; }
+    body.view-checklist .pick{ display:grid; }
+    .tb .search{ flex:1 1 100%; }
+    .seg{ width:100%; }
+    .seg button{ flex:1; padding:8px 4px; }
+    .grid{ grid-template-columns:repeat(2, minmax(0, 1fr)); gap:12px; }
+    .tile{ padding:6px; }
+    .fab{ bottom:96px; right:18px; }
+    .sets{
+      position:fixed; left:0; right:0; bottom:0; z-index:60; max-height:82vh; max-height:82dvh; flex:none;
+      border:0; border-top:1px solid var(--border); border-radius:20px 20px 0 0; overflow:hidden;
+      transform:translateY(105%); transition:transform .25s ease;
+    }
+    .sets.open{ transform:none; }
+    .sets-in{ position:static; max-height:82vh; max-height:82dvh; padding:16px 16px calc(16px + env(safe-area-inset-bottom, 0px)); }
+    .sets-head{ display:flex; }
+    .sets-back{ position:fixed; inset:0; z-index:55; background:rgba(5,12,20,.72); }
+    .sets-back.open{ display:block; }
+    .bnav{
+      position:fixed; left:16px; right:16px; bottom:calc(14px + env(safe-area-inset-bottom, 0px)); z-index:40;
+      display:flex; align-items:center; justify-content:space-between; padding:6px; border-radius:99px;
+      background:var(--bar); border:1px solid var(--border); box-shadow:0 8px 24px rgba(0,0,0,.5);
+    }
+    .nb{ position:relative; display:flex; align-items:center; justify-content:center; gap:8px; height:48px; min-width:48px; padding:0 14px; border:0; border-radius:99px; background:none; color:var(--text-muted); font-weight:600; font-size:14px; }
+    .nb.on{ background:var(--gold); color:#2B2107; padding:0 20px; }
+    .nb .lbl{ display:none; }
+    .nb.on .lbl{ display:inline; }
+    .nb .count{ position:absolute; top:2px; right:0; background:var(--gold); color:#2B2107; font-weight:700; }
+    .nb.on .count{ display:none; }
+  }
 </style>
 </head>
-<body>
-<div class="wrap">
+<body class="view-checklist">
+<div class="shell">
 
-  <div class="hero">
-    <div class="hero-top">
-      <div>
-        <p class="hero-title">La mia collezione</p>
-        <p class="hero-sub" id="subtitle">Caricamento…</p>
+  <header class="top">
+    <div class="brand"><span class="logo">OP</span><b>Collezione</b></div>
+    <nav class="switch" aria-label="Sezioni">
+      <button class="sw on" data-view="checklist"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6h11M9 12h11M9 18h11"/><path d="M3.5 6.5l1.5 1.5 2.5-3M3.5 12.5l1.5 1.5 2.5-3M3.5 18.5l1.5 1.5 2.5-3"/></svg>Checklist</button>
+      <button class="sw" data-view="wishlist"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.9 6.8 19.6l1-5.8L3.5 9.7l5.9-.9z"/></svg>Desideri<span class="count wish-count"></span></button>
+      <button class="sw" data-view="stats"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 20V11M12 20V4M19 20v-6"/></svg>Statistiche</button>
+    </nav>
+    <div class="tools">
+      <button class="ibtn" data-view="settings" aria-label="Impostazioni"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 3v2.5M12 18.5V21M3 12h2.5M18.5 12H21M5.6 5.6l1.8 1.8M16.6 16.6l1.8 1.8M5.6 18.4l1.8-1.8M16.6 7.4l1.8-1.8"/></svg></button>
+      <span class="av" id="av" hidden></span>
+    </div>
+  </header>
+
+  <div class="body">
+    <aside class="sets" id="sets" aria-label="Set">
+      <div class="sets-in">
+        <div class="sets-head"><h2>Set</h2><button class="ibtn" id="sets-close" aria-label="Chiudi"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+        <label class="sbox"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></svg><input type="text" id="set-search" aria-label="Cerca set" placeholder="Cerca set…" /></label>
+        <div id="sets-list"></div>
       </div>
-      <div class="seal"><b id="seal-pct">0%</b><span>TROVATE</span></div>
-    </div>
-    <div class="meter"><div class="meter-fill" id="meter-fill" style="width:0%"></div></div>
-    <div class="stats-row">
-      <span id="stat-owned">0 / 0 copie</span>
-      <span id="stat-sets">0 set</span>
-    </div>
-  </div>
+    </aside>
+    <div class="sets-back" id="sets-back"></div>
 
-  <div class="controls">
-    <div class="view-row">
-      <button class="chip active" data-view="checklist">Checklist</button>
-      <button class="chip" data-view="wishlist" id="wish-tab">Desideri</button>
-      <button class="chip" data-view="stats">Statistiche</button>
-    </div>
-    <div class="search-box">
-      <input type="text" id="search" placeholder="Cerca per nome o codice…" />
-    </div>
-    <div class="filter-row wishlist-only" id="wish-filters">
-      <select class="set-select" id="wish-set-filter"><option value="">Tutti i set</option></select>
-      <select class="set-select" id="wish-rarity-filter"><option value="">Tutte le rarità</option></select>
-    </div>
-    <div class="filter-row checklist-only">
-      <button class="chip active" data-filter="all">Tutte</button>
-      <button class="chip" data-filter="missing">Da trovare</button>
-      <button class="chip" data-filter="complete">Complete</button>
-      <button class="chip" data-filter="leader">Solo leader</button>
-      <select class="set-select" id="set-filter"><option value="">Tutti i set</option></select>
-      <select class="set-select" id="rarity-filter"><option value="">Tutte le rarità</option></select>
-    </div>
-    <div class="filter-row checklist-only">
-      <button class="chip active" data-category="">Tutti i tipi</button>
-      <button class="chip" data-category="regular">Set regolari</button>
-      <button class="chip" data-category="deck">Deck</button>
-      <button class="chip" data-category="memorial">Memorial</button>
-      <button class="chip" data-category="premium">Premium</button>
-      <button class="chip" data-category="promo">Promo</button>
-    </div>
-  </div>
+    <main class="detail">
+      <button class="pick" id="pick-set" aria-label="Cambia set"><span class="c" id="pick-code"></span><span class="n" id="pick-name"></span><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg><span class="v"><span class="bar"><i id="pick-bar"></i></span><span id="pick-val"></span></span></button>
 
-  <div id="list-container"></div>
+      <header class="dh"><h1 id="dh-title"></h1><span id="dh-count"></span><div class="prog checklist-only"><i id="dh-prog"></i></div></header>
 
-  <button class="manage-toggle checklist-only" id="manage-toggle">
-    <span id="manage-toggle-label">Gestisci database carte</span>
-  </button>
+      <div class="tb" id="tb" role="group" aria-label="Filtri">
+        <label class="search"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></svg><input type="text" id="search" placeholder="Cerca per nome o codice…" /></label>
+        <div class="seg checklist-only" id="state-seg">
+          <button class="on" data-filter="all">Tutte</button>
+          <button data-filter="missing">Da trovare</button>
+          <button data-filter="complete">Complete</button>
+          <button data-filter="leader">Leader</button>
+        </div>
+        <select class="sel checklist-only" id="rarity-filter" aria-label="Rarità"><option value="">Tutte le rarità</option></select>
+        <select class="sel checklist-only" id="category-filter" aria-label="Tipo di set">
+          <option value="">Tutti i tipi</option>
+          <option value="regular">Set regolari</option>
+          <option value="deck">Deck</option>
+          <option value="memorial">Memorial</option>
+          <option value="premium">Premium</option>
+          <option value="promo">Promo</option>
+        </select>
+        <button class="reset checklist-only" id="reset-filters" hidden>Reimposta filtri</button>
+        <div class="wf wishlist-only" id="wish-filters">
+          <select class="sel" id="wish-set-filter" aria-label="Set"><option value="">Tutti i set</option></select>
+          <select class="sel" id="wish-rarity-filter" aria-label="Rarità"><option value="">Tutte le rarità</option></select>
+        </div>
+      </div>
 
-  <div class="manage-panel checklist-only" id="manage-panel">
+      <div id="list-container"></div>
 
-    <div class="manage-section">
-      <h3>Aggiungi una carta</h3>
-      <div class="field"><label>Codice</label><input type="text" id="add-code" placeholder="OP01-001" /></div>
-      <div class="field"><label>Nome</label><input type="text" id="add-name" placeholder="Monkey D. Luffy" /></div>
-      <div class="field"><label>Set</label><input type="text" id="add-set" placeholder="OP-01 Romance Dawn" /></div>
-      <div class="field"><label>Rarità</label><input type="text" id="add-rarity" placeholder="C, UC, R, SR, SEC…" list="rarity-options" /></div>
-      <div class="checkbox-row"><input type="checkbox" id="add-leader" /><label for="add-leader">È una carta Leader (obiettivo 1x invece di 4x)</label></div>
-      <div class="btn-row"><button class="btn btn-gold" id="add-submit">Aggiungi / aggiorna</button></div>
-      <div class="msg" id="add-msg"></div>
-    </div>
+      <div class="settings" id="settings-pane">
 
-    <div class="manage-section">
-      <h3>Importazione multipla</h3>
-      <div class="field">
-        <textarea id="bulk-text" placeholder="OP01-001 | Monkey D. Luffy | OP-01 Romance Dawn | L | L
+        <div class="manage-section">
+          <h3>Account Google</h3>
+          <div id="fb-out">
+            <p class="hint" style="margin-top:0;">Accedi con il tuo account Google: la collezione viene salvata nel tuo account e la ritrovi su qualsiasi dispositivo. Ogni account vede solo i propri dati.</p>
+            <div class="btn-row" style="margin-top:12px;"><button class="btn btn-gold" id="fb-login">Accedi con Google</button></div>
+          </div>
+          <div id="fb-in" style="display:none;">
+            <div class="who"><span class="av" id="av-big"></span><div><b>Connesso con Google</b><small id="fb-email"></small></div></div>
+            <div class="btn-row">
+              <button class="btn" id="fb-sync-now">Sincronizza ora</button>
+              <button class="btn btn-danger" id="fb-logout">Esci</button>
+            </div>
+            <p class="hint" id="fb-status"></p>
+            <p class="hint">Uscendo, i dati vengono rimossi da questo dispositivo e restano nel tuo account.</p>
+          </div>
+          <div class="msg" id="fb-msg"></div>
+        </div>
+
+        <div class="manage-section">
+          <h3>Aggiungi una carta</h3>
+          <div class="field"><label for="add-code">Codice</label><input type="text" id="add-code" placeholder="OP01-001" /></div>
+          <div class="field"><label for="add-name">Nome</label><input type="text" id="add-name" placeholder="Monkey D. Luffy" /></div>
+          <div class="field"><label for="add-set">Set</label><input type="text" id="add-set" placeholder="OP-01 Romance Dawn" /></div>
+          <div class="field"><label for="add-rarity">Rarità</label><input type="text" id="add-rarity" placeholder="C, UC, R, SR, SEC…" list="rarity-options" /></div>
+          <div class="checkbox-row"><input type="checkbox" id="add-leader" /><label for="add-leader">È una carta Leader (obiettivo 1x invece di 4x)</label></div>
+          <div class="btn-row"><button class="btn btn-gold" id="add-submit">Aggiungi / aggiorna</button></div>
+          <div class="msg" id="add-msg"></div>
+        </div>
+
+        <div class="manage-section">
+          <h3>Importazione multipla</h3>
+          <div class="field">
+            <textarea id="bulk-text" aria-label="Elenco carte" placeholder="OP01-001 | Monkey D. Luffy | OP-01 Romance Dawn | L | L
 OP01-002 | Roronoa Zoro | OP-01 Romance Dawn | SR
 OP01-003 | Nami | OP-01 Romance Dawn | C"></textarea>
-      </div>
-      <p class="hint">Una carta per riga: <b>codice | nome | set | rarità | L</b> (rarità e "L" finale sono opzionali; "L" indica una carta Leader con obiettivo 1x). Le righe già usate in formato precedente, senza colonna rarità, restano valide. In alternativa puoi incollare un array JSON con i campi code, name, set, rarity, leader.</p>
-      <div class="btn-row" style="margin-top:10px;"><button class="btn btn-gold" id="bulk-submit">Importa carte</button></div>
-      <div class="msg" id="bulk-msg"></div>
-    </div>
-
-    <div class="manage-section">
-      <h3>Backup dati</h3>
-      <p class="hint">I dati sono salvati automaticamente in questo browser, su questo dispositivo. Se cambi telefono o browser dovrai reimportare i dati: esporta un backup ogni tanto per sicurezza.</p>
-      <div class="btn-row">
-        <button class="btn" id="export-btn">Esporta backup (JSON)</button>
-        <button class="btn btn-danger" id="clear-btn">Svuota collezione</button>
-      </div>
-      <div class="msg" id="backup-msg"></div>
-    </div>
-
-    <div class="manage-section">
-      <h3>Account Google</h3>
-      <div id="fb-out">
-        <p class="hint">Accedi con il tuo account Google: la collezione viene salvata nel tuo account e la ritrovi su qualsiasi dispositivo. Ogni account vede solo i propri dati.</p>
-        <div class="btn-row"><button class="btn btn-gold" id="fb-login">Accedi con Google</button></div>
-      </div>
-      <div id="fb-in" style="display:none;">
-        <p class="hint">Connesso come <b id="fb-email"></b>.</p>
-        <div class="btn-row">
-          <button class="btn" id="fb-sync-now">Sincronizza ora</button>
-          <button class="btn btn-danger" id="fb-logout">Esci</button>
+          </div>
+          <p class="hint">Una carta per riga: <b>codice | nome | set | rarità | L</b> (rarità e "L" finale sono opzionali; "L" indica una carta Leader con obiettivo 1x). Le righe già usate in formato precedente, senza colonna rarità, restano valide. In alternativa puoi incollare un array JSON con i campi code, name, set, rarity, leader.</p>
+          <div class="btn-row" style="margin-top:10px;"><button class="btn btn-gold" id="bulk-submit">Importa carte</button></div>
+          <div class="msg" id="bulk-msg"></div>
         </div>
-        <p class="hint" id="fb-status"></p>
-      </div>
-      <div class="msg" id="fb-msg"></div>
-    </div>
 
+        <div class="manage-section">
+          <h3>Dati e backup</h3>
+          <p class="hint" style="margin-top:0;">Una copia della collezione da tenere al sicuro: esporta un backup ogni tanto.</p>
+          <div class="btn-row" style="margin-top:12px;"><button class="btn" id="export-btn">Esporta backup (JSON)</button></div>
+          <div class="msg" id="backup-msg"></div>
+          <div class="meta-row"><span>Catalogo carte</span><b id="catalog-info">non caricato</b></div>
+          <div class="danger-zone">
+            <p>Elimina tutte le carte dalla collezione, anche dall'account. L'azione non è reversibile.</p>
+            <button class="btn btn-danger" id="clear-btn">Svuota collezione</button>
+          </div>
+        </div>
+
+      </div>
+    </main>
   </div>
+
+  <nav class="bnav" aria-label="Sezioni">
+    <button class="nb on" data-view="checklist" aria-label="Checklist"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6h11M9 12h11M9 18h11"/><path d="M3.5 6.5l1.5 1.5 2.5-3M3.5 12.5l1.5 1.5 2.5-3M3.5 18.5l1.5 1.5 2.5-3"/></svg><span class="lbl">Checklist</span></button>
+    <button class="nb" data-view="wishlist" aria-label="Desideri"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.9 6.8 19.6l1-5.8L3.5 9.7l5.9-.9z"/></svg><span class="lbl">Desideri</span><span class="count wish-count"></span></button>
+    <button class="nb" data-view="stats" aria-label="Statistiche"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 20V11M12 20V4M19 20v-6"/></svg><span class="lbl">Statistiche</span></button>
+    <button class="nb" data-view="settings" aria-label="Impostazioni"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 3v2.5M12 18.5V21M3 12h2.5M18.5 12H21M5.6 5.6l1.8 1.8M16.6 16.6l1.8 1.8M5.6 18.4l1.8-1.8M16.6 7.4l1.8-1.8"/></svg><span class="lbl">Impostazioni</span></button>
+  </nav>
 
 </div>
 
@@ -632,6 +744,10 @@ OP01-003 | Nami | OP-01 Romance Dawn | C"></textarea>
       document.getElementById('fb-out').style.display = user ? 'none' : 'block';
       document.getElementById('fb-in').style.display = user ? 'block' : 'none';
       document.getElementById('fb-email').textContent = user ? (user.email || user.displayName || '') : '';
+      var initial = user ? String(user.displayName || user.email || '?').charAt(0).toUpperCase() : '';
+      document.getElementById('av').textContent = initial;
+      document.getElementById('av').hidden = !user;
+      document.getElementById('av-big').textContent = initial;
       if(user) fbSync();
     });
   };
@@ -711,31 +827,110 @@ OP01-003 | Nami | OP-01 Romance Dawn | C"></textarea>
     return { groups: groups, order: order };
   }
 
-  function updateHeader(){
-    var totalTarget = 0, totalOwned = 0;
-    var setsSeen = {};
-    state.cards.forEach(function(c){
-      totalTarget += target(c);
-      totalOwned += Math.min(c.owned, target(c));
-      setsSeen[c.set] = true;
-    });
-    var pct = totalTarget > 0 ? Math.round((totalOwned/totalTarget)*100) : 0;
-    document.getElementById('seal-pct').textContent = pct + '%';
-    document.getElementById('meter-fill').style.width = pct + '%';
-    document.getElementById('stat-owned').textContent = totalOwned + ' / ' + totalTarget + ' copie';
-    document.getElementById('stat-sets').textContent = Object.keys(setsSeen).length + ' set';
-    var subtitle = document.getElementById('subtitle');
-    subtitle.textContent = state.cards.length === 0 ? 'Nessuna carta nel database' : state.cards.length + ' carte censite';
+  // ---- COLONNA SET E INTESTAZIONE ----
+  function setCode(cards){
+    var m = cards[0].code.match(/^([A-Z]+\d+)-/);
+    return m ? m[1] : '';
   }
 
-  function updateSetSelect(){
-    var sel = document.getElementById('set-filter');
-    var current = sel.value;
-    var sets = Array.from(new Set(state.cards.map(function(c){ return c.set; }))).sort();
-    sel.innerHTML = '<option value="">Tutti i set</option>' + sets.map(function(s){
-      return '<option value="' + escapeHtml(s) + '">' + escapeHtml(s) + '</option>';
-    }).join('');
-    if(sets.indexOf(current) !== -1) sel.value = current;
+  // "OP-01 Romance Dawn" con codice OP01 diventa "Romance Dawn": il codice si mostra a parte.
+  function setLabel(name, code){
+    if(!code) return name;
+    var re = new RegExp('^' + code.replace(/^([A-Z]+)(\d+)$/, '$1[-\\s]?$2') + '[\\s:–-]*', 'i');
+    return name.replace(re, '') || name;
+  }
+
+  // Un elemento per set (stesso raggruppamento della checklist) con copie possedute e obiettivo.
+  function computeSets(){
+    var by = {};
+    state.cards.forEach(function(c){
+      var s = by[c.set] || (by[c.set] = { name: c.set, cards: [], owned: 0, target: 0 });
+      s.cards.push(c);
+      s.owned += Math.min(c.owned, target(c));
+      s.target += target(c);
+    });
+    var list = Object.keys(by).map(function(n){
+      var s = by[n];
+      s.code = setCode(s.cards);
+      s.label = setLabel(n, s.code);
+      return s;
+    });
+    list.sort(function(a, b){
+      var ra = setGroupRank(a.cards), rb = setGroupRank(b.cards);
+      return ra !== rb ? ra - rb : a.name.localeCompare(b.name);
+    });
+    return list;
+  }
+
+  function renderRail(){
+    var list = computeSets();
+    if(state.setFilter && !list.some(function(s){ return s.name === state.setFilter; })) state.setFilter = '';
+    var q = document.getElementById('set-search').value.trim().toLowerCase();
+    var all = { owned: 0, target: 0 };
+    list.forEach(function(s){ all.owned += s.owned; all.target += s.target; });
+    function row(name, code, label, owned, tgt){
+      var pct = tgt > 0 ? Math.round(owned / tgt * 100) : 0;
+      return '<button class="set' + (state.setFilter === name ? ' on' : '') + '" data-setsel="' + escapeHtml(name) + '">'
+        + '<span class="c">' + escapeHtml(code) + '</span><span class="n">' + escapeHtml(label) + '</span>'
+        + '<span class="v">' + owned + ' / ' + tgt + '</span>'
+        + '<span class="bar"><i class="' + (pct >= 100 ? 'full' : '') + '" style="width:' + pct + '%"></i></span></button>';
+    }
+    var html = q ? '' : row('', '', 'Tutti i set', all.owned, all.target);
+    list.forEach(function(s){
+      if(q && (s.name + ' ' + s.code).toLowerCase().indexOf(q) === -1) return;
+      html += row(s.name, s.code, s.label, s.owned, s.target);
+    });
+    document.getElementById('sets-list').innerHTML = html;
+  }
+
+  // Titolo della vista; in checklist anche progresso del set scelto (o totale) e selettore del telefono.
+  function renderHead(){
+    var title = '', count = '';
+    if(state.view === 'checklist'){
+      var owned = 0, tgt = 0, sel = null;
+      computeSets().forEach(function(s){
+        owned += s.owned; tgt += s.target;
+        if(s.name === state.setFilter) sel = s;
+      });
+      if(sel){ owned = sel.owned; tgt = sel.target; }
+      var pct = tgt > 0 ? Math.round(owned / tgt * 100) : 0;
+      var code = sel ? sel.code : '', name = sel ? sel.label : 'Tutti i set';
+      title = (code ? '<b>' + escapeHtml(code) + '</b> ' : '') + escapeHtml(name);
+      count = owned + ' / ' + tgt + ' copie';
+      document.getElementById('dh-prog').style.width = pct + '%';
+      document.getElementById('pick-code').textContent = code;
+      document.getElementById('pick-name').textContent = name;
+      document.getElementById('pick-bar').style.width = pct + '%';
+      document.getElementById('pick-val').textContent = owned + ' / ' + tgt;
+    } else if(state.view === 'wishlist'){
+      var n = state.cards.filter(function(c){ return c.wishlist; }).length;
+      title = 'Desideri';
+      count = n ? n + (n === 1 ? ' carta' : ' carte') : '';
+    } else {
+      title = state.view === 'stats' ? 'Statistiche' : 'Impostazioni';
+    }
+    document.getElementById('dh-title').innerHTML = title;
+    document.getElementById('dh-count').textContent = count;
+  }
+
+  // Segna i filtri attivi (bordo verde acqua) e mostra "Reimposta" solo se serve.
+  function markFilters(){
+    document.querySelectorAll('#state-seg button').forEach(function(b){
+      b.classList.toggle('on', b.getAttribute('data-filter') === state.filter);
+    });
+    var rs = document.getElementById('rarity-filter'), cs = document.getElementById('category-filter');
+    rs.value = state.rarityFilter; cs.value = state.categoryFilter;
+    rs.classList.toggle('on', !!rs.value); cs.classList.toggle('on', !!cs.value);
+    document.getElementById('reset-filters').hidden = !(state.filter !== 'all' || state.rarityFilter || state.categoryFilter || state.search);
+  }
+
+  function openSheet(){
+    document.getElementById('sets').classList.add('open');
+    document.getElementById('sets-back').classList.add('open');
+  }
+  function closeSheet(){
+    document.getElementById('sets').classList.remove('open');
+    document.getElementById('sets-back').classList.remove('open');
   }
 
   function updateRaritySelect(){
@@ -763,11 +958,6 @@ OP01-003 | Nami | OP-01 Romance Dawn | C"></textarea>
     return state.collapsed.hasOwnProperty(setName) ? state.collapsed[setName] : true;
   }
 
-  function getPinTop(){
-    var hero = document.querySelector('.hero');
-    return hero ? Math.ceil(hero.getBoundingClientRect().height) : 0;
-  }
-
   function starSvg(){
     return '<svg viewBox="0 0 24 24"><polygon points="12 2.8 14.8 8.9 21.4 9.6 16.5 14.1 17.9 20.6 12 17.3 6.1 20.6 7.5 14.1 2.6 9.6 9.2 8.9"/></svg>';
   }
@@ -778,7 +968,7 @@ OP01-003 | Nami | OP-01 Romance Dawn | C"></textarea>
 
   function updateWishTab(){
     var n = state.cards.filter(function(c){ return c.wishlist; }).length;
-    document.getElementById('wish-tab').textContent = 'Desideri' + (n ? ' (' + n + ')' : '');
+    document.querySelectorAll('.wish-count').forEach(function(el){ el.textContent = n || ''; });
   }
 
   // Le opzioni dei filtri contengono solo set e rarità presenti nella lista dei desideri;
@@ -799,6 +989,8 @@ OP01-003 | Nami | OP-01 Romance Dawn | C"></textarea>
     state.wishSetFilter = fillWishSelect('wish-set-filter', 'Tutti i set', sets, state.wishSetFilter);
     state.wishRarityFilter = fillWishSelect('wish-rarity-filter', 'Tutte le rarità', rarities, state.wishRarityFilter);
     document.getElementById('wish-filters').style.display = wishCards.length ? '' : 'none';
+    document.getElementById('wish-set-filter').classList.toggle('on', !!state.wishSetFilter);
+    document.getElementById('wish-rarity-filter').classList.toggle('on', !!state.wishRarityFilter);
   }
 
   // ---- STATISTICHE ----
@@ -900,6 +1092,19 @@ OP01-003 | Nami | OP-01 Romance Dawn | C"></textarea>
     var st = computeStats(state.cards);
     var html = '<div class="stats-list">';
 
+    var pct = pctOf(st.total), circ = 351.86;
+    html += '<div class="stats-section stats-wide"><h3>Panoramica</h3><div class="over">'
+      + '<div class="ring"><svg viewBox="0 0 140 140" aria-hidden="true"><circle class="track" cx="70" cy="70" r="56"/>'
+      + '<circle class="val" cx="70" cy="70" r="56" transform="rotate(-90 70 70)" stroke-dasharray="' + (circ * pct / 100).toFixed(1) + ' ' + circ + '"/></svg>'
+      + '<div class="mid"><b>' + pct + '%</b><small>trovate</small></div></div>'
+      + '<div class="sum"><p class="big">La collezione è completa al ' + pct + '%</p>'
+      + '<p class="sub">Mancano ' + (st.total.target - st.total.owned) + ' copie per chiudere tutti i set censiti.</p></div>'
+      + '<div class="stat-tiles">'
+      + '<div class="stat-tile"><b>' + st.total.owned + ' / ' + st.total.target + '</b><span>copie trovate</span></div>'
+      + '<div class="stat-tile"><b>' + st.total.cards + '</b><span>carte censite</span></div>'
+      + '<div class="stat-tile"><b>' + st.setsTotal + '</b><span>set</span></div>'
+      + '</div></div></div>';
+
     html += '<div class="stats-section"><h3>Traguardi</h3><div class="stat-tiles">'
       + '<div class="stat-tile"><b>' + st.setsComplete + '/' + st.setsTotal + '</b><span>Set completi</span></div>'
       + '<div class="stat-tile"><b>' + st.total.complete + '/' + st.total.cards + '</b><span>Carte complete</span></div>'
@@ -934,26 +1139,24 @@ OP01-003 | Nami | OP-01 Romance Dawn | C"></textarea>
 
   function setView(v){
     state.view = v;
-    document.querySelectorAll('.chip[data-view]').forEach(function(c){
-      c.classList.toggle('active', c.getAttribute('data-view') === v);
+    document.querySelectorAll('[data-view]').forEach(function(b){
+      var on = b.getAttribute('data-view') === v;
+      b.classList.toggle('on', on);
+      if(on) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current');
     });
-    document.body.classList.toggle('wishlist-mode', v === 'wishlist');
-    document.body.classList.toggle('stats-mode', v === 'stats');
+    ['checklist', 'wishlist', 'stats', 'settings'].forEach(function(n){ document.body.classList.toggle('view-' + n, n === v); });
+    closeSheet();
+    renderRail();
     renderList();
+    window.scrollTo(0, 0);
   }
 
-  // Dalle statistiche apre la checklist già filtrata su un set, con il set aperto.
+  // Dalle statistiche apre la checklist sul set scelto, senza altri filtri.
   function goToSet(name){
     state.filter = 'all'; state.categoryFilter = ''; state.rarityFilter = ''; state.search = '';
     state.setFilter = name;
-    state.collapsed[name] = false;
-    document.querySelectorAll('.chip[data-filter]').forEach(function(c){ c.classList.toggle('active', c.getAttribute('data-filter') === 'all'); });
-    document.querySelectorAll('.chip[data-category]').forEach(function(c){ c.classList.toggle('active', c.getAttribute('data-category') === ''); });
-    document.getElementById('rarity-filter').value = '';
-    document.getElementById('set-filter').value = name;
     document.getElementById('search').value = '';
     setView('checklist');
-    window.scrollTo(0, 0);
   }
 
   function renderWishlist(){
@@ -1002,14 +1205,39 @@ OP01-003 | Nami | OP-01 Romance Dawn | C"></textarea>
     container.innerHTML = html;
   }
 
+  function imgFor(code){
+    var e = catalog && catalog[code];
+    return e && e.variants && e.variants[0] ? tcgImg(e.variants[0][0], 200) : '';
+  }
+
+  // Tessera della galleria: copertina (da catalogo, se disponibile), nome, rarità e caselle delle copie.
+  function tileHtml(c){
+    var t = target(c), code = escapeHtml(c.code), img = imgFor(c.code);
+    var h = '<div class="tile' + (c.owned >= t ? ' complete' : '') + '" data-code="' + code + '">';
+    h += '<div class="art" data-detail="' + code + '">';
+    if(img) h += '<img src="' + img + '" alt="" loading="lazy" referrerpolicy="no-referrer">';
+    h += '<span class="ac">' + code + '</span>' + wishBtn(c) + '</div>';
+    h += '<div class="meta"><span class="name" data-detail="' + code + '">' + escapeHtml(c.name) + '</span><div class="r2">';
+    if(c.rarity) h += '<span class="rarity-pill ' + rarityClass(c.rarity) + '">' + escapeHtml(c.rarity) + '</span>';
+    if(c.leader) h += '<span class="leader-pill">Leader</span>';
+    h += '<div class="squares" data-code="' + code + '">';
+    for(var i = 0; i < t; i++){
+      h += '<button class="square' + (i < c.owned ? ' filled' : '') + '" data-idx="' + i + '" aria-label="Copia ' + (i + 1) + '">' + squareSvg() + '</button>';
+    }
+    return h + '</div></div></div></div>';
+  }
+
   function renderList(){
+    renderHead();
+    markFilters();
+    if(state.view === 'settings') return;
     if(state.view === 'wishlist'){ renderWishlist(); return; }
     if(state.view === 'stats'){ renderStats(); return; }
     var container = document.getElementById('list-container');
     if(state.cards.length === 0){
       container.innerHTML = '<div class="empty-state">'
         + '<p><b>Il database è vuoto.</b></p>'
-        + '<p>Aggiungi le carte una per una o importa una lista dal pannello qui sotto.</p>'
+        + '<p>Aggiungi le carte una per una o importa una lista dalle Impostazioni.</p>'
         + '</div>';
       return;
     }
@@ -1018,62 +1246,36 @@ OP01-003 | Nami | OP-01 Romance Dawn | C"></textarea>
       container.innerHTML = '<div class="empty-state"><p>Nessuna carta corrisponde ai filtri.</p></div>';
       return;
     }
+    // Con un set scelto la galleria è sempre aperta; in "Tutti i set" i gruppi si comprimono.
+    var single = !!state.setFilter;
     var html = '';
-    var pinTop = getPinTop();
     data.order.forEach(function(setName){
       var cards = data.groups[setName];
-      var setOwned = 0, setTarget = 0;
-      cards.forEach(function(c){ setOwned += Math.min(c.owned, target(c)); setTarget += target(c); });
-      var collapsed = isCollapsed(setName);
+      var collapsed = !single && isCollapsed(setName);
       html += '<div class="set-group">';
-      html += '<div class="set-head' + (collapsed ? '' : ' pinned') + '"' + (collapsed ? '' : ' style="top:' + pinTop + 'px"') + ' data-set="' + escapeHtml(setName) + '">';
-      html += '<div class="set-head-left"><svg class="chevron' + (collapsed?' collapsed':'') + '" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>';
-      html += '<span class="set-name">' + escapeHtml(setName) + '</span></div>';
-      html += '<span class="set-count">' + setOwned + '/' + setTarget + '</span>';
-      html += '</div>';
-      if(!collapsed){
-        html += '<div class="card-list">';
-        cards.forEach(function(c){
-          var t = target(c);
-          var isComplete = c.owned >= t;
-          html += '<div class="card-row' + (isComplete?' complete':'') + '">';
-          html += '<div class="card-top" data-detail="' + escapeHtml(c.code) + '">';
-          html += '<span class="card-code">' + escapeHtml(c.code) + '</span>';
-          html += '<span class="card-name">' + escapeHtml(c.name) + '</span>';
-          if(c.rarity) html += '<span class="rarity-pill ' + rarityClass(c.rarity) + '">' + escapeHtml(c.rarity) + '</span>';
-          if(c.leader) html += '<span class="leader-pill">Leader</span>';
-          html += wishBtn(c);
-          html += '</div>';
-          html += '<div class="card-bottom">';
-          html += '<span class="card-set">' + escapeHtml(c.set) + '</span>';
-          html += '<div class="squares" data-code="' + escapeHtml(c.code) + '">';
-          for(var i=0;i<t;i++){
-            html += '<button class="square' + (i < c.owned ? ' filled' : '') + '" data-idx="' + i + '" aria-label="Copia ' + (i+1) + '">' + squareSvg() + '</button>';
-          }
-          html += '</div></div></div>';
-        });
-        html += '</div>';
+      if(!single){
+        var setOwned = 0, setTarget = 0;
+        cards.forEach(function(c){ setOwned += Math.min(c.owned, target(c)); setTarget += target(c); });
+        html += '<div class="set-head' + (collapsed ? '' : ' pinned') + '" data-set="' + escapeHtml(setName) + '">';
+        html += '<div class="set-head-left"><svg class="chevron' + (collapsed?' collapsed':'') + '" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>';
+        html += '<span class="set-name">' + escapeHtml(setName) + '</span></div>';
+        html += '<span class="set-count">' + setOwned + '/' + setTarget + '</span></div>';
       }
+      if(!collapsed) html += '<div class="grid">' + cards.map(tileHtml).join('') + '</div>';
       html += '</div>';
     });
     container.innerHTML = html;
   }
 
   function render(){
-    updateHeader();
     updateWishTab();
-    updateSetSelect();
     updateRaritySelect();
+    renderRail();
     renderList();
   }
 
   document.getElementById('search').addEventListener('input', function(e){
     state.search = e.target.value;
-    renderList();
-  });
-
-  document.getElementById('set-filter').addEventListener('change', function(e){
-    state.setFilter = e.target.value;
     renderList();
   });
 
@@ -1092,29 +1294,46 @@ OP01-003 | Nami | OP-01 Romance Dawn | C"></textarea>
     renderList();
   });
 
-  document.querySelectorAll('.chip[data-filter]').forEach(function(chip){
-    chip.addEventListener('click', function(){
-      document.querySelectorAll('.chip[data-filter]').forEach(function(c){ c.classList.remove('active'); });
-      chip.classList.add('active');
-      state.filter = chip.getAttribute('data-filter');
+  document.getElementById('category-filter').addEventListener('change', function(e){
+    state.categoryFilter = e.target.value;
+    renderList();
+  });
+
+  document.querySelectorAll('#state-seg button').forEach(function(b){
+    b.addEventListener('click', function(){
+      state.filter = b.getAttribute('data-filter');
       renderList();
     });
   });
 
-  document.querySelectorAll('.chip[data-category]').forEach(function(chip){
-    chip.addEventListener('click', function(){
-      document.querySelectorAll('.chip[data-category]').forEach(function(c){ c.classList.remove('active'); });
-      chip.classList.add('active');
-      state.categoryFilter = chip.getAttribute('data-category');
-      renderList();
-    });
+  document.querySelectorAll('[data-view]').forEach(function(b){
+    b.addEventListener('click', function(){ setView(b.getAttribute('data-view')); });
   });
 
-  document.querySelectorAll('.chip[data-view]').forEach(function(chip){
-    chip.addEventListener('click', function(){
-      setView(chip.getAttribute('data-view'));
-    });
+  document.getElementById('reset-filters').addEventListener('click', function(){
+    state.filter = 'all'; state.rarityFilter = ''; state.categoryFilter = ''; state.search = '';
+    document.getElementById('search').value = '';
+    renderList();
   });
+
+  document.getElementById('sets-list').addEventListener('click', function(e){
+    var b = e.target.closest('[data-setsel]');
+    if(!b) return;
+    state.setFilter = b.getAttribute('data-setsel');
+    closeSheet();
+    renderRail();
+    renderList();
+    window.scrollTo(0, 0);
+  });
+  document.getElementById('set-search').addEventListener('input', renderRail);
+  document.getElementById('pick-set').addEventListener('click', openSheet);
+  document.getElementById('sets-close').addEventListener('click', closeSheet);
+  document.getElementById('sets-back').addEventListener('click', closeSheet);
+
+  // Una copertina che non carica (offline, id sbagliato) lascia visibile il segnaposto.
+  document.getElementById('list-container').addEventListener('error', function(e){
+    if(e.target.tagName === 'IMG') e.target.classList.add('broken');
+  }, true);
 
   document.getElementById('list-container').addEventListener('click', function(e){
     var goto = e.target.closest('[data-goto-set]');
@@ -1127,7 +1346,13 @@ OP01-003 | Nami | OP-01 Romance Dawn | C"></textarea>
         touch(wc);
         scheduleSave();
         updateWishTab();
-        renderList();
+        if(state.view === 'wishlist'){
+          renderList();
+        } else {
+          wish.classList.toggle('active', !!wc.wishlist);
+          wish.setAttribute('aria-pressed', wc.wishlist ? 'true' : 'false');
+          wish.setAttribute('aria-label', wc.wishlist ? 'Rimuovi dai desideri' : 'Aggiungi ai desideri');
+        }
       }
       return;
     }
@@ -1149,7 +1374,14 @@ OP01-003 | Nami | OP-01 Romance Dawn | C"></textarea>
         clampOwned(card);
         touch(card);
         scheduleSave();
-        render();
+        // Aggiornamento sul posto: rifare tutta la galleria ricaricherebbe le copertine.
+        var tile = square.closest('.tile');
+        if(tile){
+          tile.classList.toggle('complete', card.owned >= target(card));
+          tile.querySelectorAll('.square').forEach(function(sq, i){ sq.classList.toggle('filled', i < card.owned); });
+        }
+        renderRail();
+        renderHead();
       }
       return;
     }
@@ -1166,12 +1398,6 @@ OP01-003 | Nami | OP-01 Romance Dawn | C"></textarea>
     el.className = 'msg show ' + (ok ? 'ok' : 'err');
     setTimeout(function(){ el.classList.remove('show'); }, 3200);
   }
-
-  document.getElementById('manage-toggle').addEventListener('click', function(){
-    var panel = document.getElementById('manage-panel');
-    panel.classList.toggle('open');
-    document.getElementById('manage-toggle-label').textContent = panel.classList.contains('open') ? 'Nascondi gestione database' : 'Gestisci database carte';
-  });
 
   document.getElementById('add-submit').addEventListener('click', function(){
     var res = upsertCard({
@@ -1302,7 +1528,7 @@ OP01-003 | Nami | OP-01 Romance Dawn | C"></textarea>
   var TCG_IMG = 'https://tcgplayer-cdn.tcgplayer.com/product/';
   var COLOR_IT = { Red: 'Rosso', Green: 'Verde', Blue: 'Blu', Purple: 'Viola', Black: 'Nero', Yellow: 'Giallo' };
   var TYPE_IT = { Leader: 'Leader', Character: 'Personaggio', Event: 'Evento', Stage: 'Stage' };
-  var catalog = null, catalogPromise = null;
+  var catalog = null, catalogPromise = null, catalogDate = '';
   var detailCode = null;
 
   function loadCatalog(){
@@ -1313,6 +1539,7 @@ OP01-003 | Nami | OP-01 Romance Dawn | C"></textarea>
         return res.json();
       }).then(function(data){
         catalog = (data && data.cards) || {};
+        catalogDate = (data && data.generatedAt) || '';
         return catalog;
       }).catch(function(){
         catalogPromise = null; // riprova alla prossima apertura
@@ -1455,7 +1682,7 @@ OP01-003 | Nami | OP-01 Romance Dawn | C"></textarea>
     if(code) openEdit(code);
   });
   document.addEventListener('keydown', function(e){
-    if(e.key === 'Escape' && detailCode) closeDetail();
+    if(e.key === 'Escape'){ if(detailCode) closeDetail(); closeSheet(); }
   });
 
   function openEdit(code){
@@ -1518,6 +1745,15 @@ OP01-003 | Nami | OP-01 Romance Dawn | C"></textarea>
   });
 
   loadData();
+  // Il catalogo serve alle copertine della galleria: si carica subito e si ridisegna quando arriva.
+  loadCatalog().then(function(cat){
+    var n = Object.keys(cat || {}).length;
+    var d = catalogDate ? new Date(catalogDate + 'T00:00:00') : null;
+    document.getElementById('catalog-info').textContent = n
+      ? n.toLocaleString('it-IT') + ' codici' + (d && !isNaN(d) ? ' · aggiornato il ' + d.toLocaleDateString('it-IT', { day: 'numeric', month: 'long', year: 'numeric' }) : '')
+      : 'non disponibile';
+    if(state.view === 'checklist') renderList();
+  });
   // Pulizia della vecchia sync Gist: il token non serve più e non va lasciato in chiaro nel browser.
   localStorage.removeItem('op-gh-token');
   localStorage.removeItem('op-gh-gistid');
@@ -1525,7 +1761,6 @@ OP01-003 | Nami | OP-01 Romance Dawn | C"></textarea>
   document.addEventListener('visibilitychange', function(){
     if(document.visibilityState === 'visible' && Date.now() - fbLastSync > SYNC_MIN_INTERVAL) fbSync();
   });
-  window.addEventListener('resize', function(){ renderList(); });
 })();
 </script>
 <script type="module">
