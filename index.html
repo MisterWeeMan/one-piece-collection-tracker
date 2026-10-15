@@ -338,36 +338,11 @@ OP01-003 | Nami | OP-01 Romance Dawn | C"></textarea>
         <p class="hint">Connesso come <b id="fb-email"></b>.</p>
         <div class="btn-row">
           <button class="btn" id="fb-sync-now">Sincronizza ora</button>
-          <button class="btn" id="fb-import-gist">Importa dal Gist</button>
           <button class="btn btn-danger" id="fb-logout">Esci</button>
         </div>
         <p class="hint" id="fb-status"></p>
-        <p class="hint" id="fb-import-msg"></p>
       </div>
       <div class="msg" id="fb-msg"></div>
-    </div>
-
-    <div class="manage-section">
-      <h3>Sincronizzazione tramite Gist (vecchio metodo)</h3>
-      <div id="gh-disconnected">
-        <p class="hint">Collega l'app a un Gist privato del tuo account GitHub: i dati vengono salvati lì e li ritrovi su qualsiasi altro dispositivo. Serve un Personal Access Token con permesso "gist" — <a href="https://github.com/settings/tokens" target="_blank" style="color:var(--gold);">crealo qui</a> (scegli "Generate new token (classic)", spunta solo la casella "gist", genera e copia il token).</p>
-        <div class="field"><label>Personal Access Token</label><input type="password" id="gh-token" placeholder="ghp_..." /></div>
-        <div class="field"><label>Gist ID (lascia vuoto se non ne hai già uno)</label><input type="text" id="gh-gistid" placeholder="solo se ti stai collegando a un gist esistente" /></div>
-        <div class="btn-row">
-          <button class="btn btn-gold" id="gh-create-new">Crea nuovo Gist</button>
-          <button class="btn" id="gh-connect-existing">Collega a Gist esistente</button>
-        </div>
-        <div class="msg" id="gh-msg"></div>
-      </div>
-      <div id="gh-connected" style="display:none;">
-        <p class="hint">Connesso. Su ogni altro dispositivo apri questo stesso pannello e inserisci lo stesso Gist ID con un token valido per collegarti allo stesso archivio.</p>
-        <div class="field"><label>Gist ID</label><input type="text" id="gh-gistid-display" readonly /></div>
-        <div class="btn-row">
-          <button class="btn" id="gh-sync-now">Sincronizza ora</button>
-          <button class="btn btn-danger" id="gh-disconnect">Disconnetti</button>
-        </div>
-        <p class="hint" id="gh-status"></p>
-      </div>
     </div>
 
   </div>
@@ -563,7 +538,6 @@ OP01-003 | Nami | OP-01 Romance Dawn | C"></textarea>
   function scheduleSave(){
     if(saveTimer) clearTimeout(saveTimer);
     saveTimer = setTimeout(saveData, 250);
-    ghSchedulePush();
     fbSchedulePush();
   }
   function persist(){
@@ -637,147 +611,16 @@ OP01-003 | Nami | OP-01 Romance Dawn | C"></textarea>
     render();
   }
 
-  var GH_TOKEN_KEY = 'op-gh-token';
-  var GH_GIST_KEY = 'op-gh-gistid';
-  var GIST_FILENAME = 'op-collection.json';
-  var GIST_META_FILENAME = 'op-meta.json';
-  var GH_SYNC_MIN_INTERVAL = 30000;
-  var ghSyncTimer = null;
-  var ghSyncing = false;
-  var ghSyncAgain = false;
-  var ghSyncPromise = null;
-  var ghLastSync = 0;
+  var SYNC_MIN_INTERVAL = 30000;
 
-  function ghCreds(){
-    return { token: localStorage.getItem(GH_TOKEN_KEY) || '', gistId: localStorage.getItem(GH_GIST_KEY) || '' };
-  }
-  function ghSaveCreds(token, gistId){
-    localStorage.setItem(GH_TOKEN_KEY, token);
-    localStorage.setItem(GH_GIST_KEY, gistId);
-  }
-  function ghClearCreds(){
-    localStorage.removeItem(GH_TOKEN_KEY);
-    localStorage.removeItem(GH_GIST_KEY);
-  }
-
-  async function ghReadFile(file){
-    var content = file.content;
-    if(file.truncated){
-      var rawRes = await fetch(file.raw_url);
-      content = await rawRes.text();
-    }
-    return JSON.parse(content);
-  }
-
-  // Il file delle carte resta un semplice array (compatibile con le versioni precedenti);
-  // lapidi e storico stanno nel file affiancato, che le versioni vecchie ignorano.
-  async function ghFetchGist(token, gistId){
-    var res = await fetch('https://api.github.com/gists/' + gistId, {
-      headers: { 'Authorization': 'token ' + token, 'Accept': 'application/vnd.github+json' }
-    });
-    if(!res.ok) throw new Error(res.status === 404 ? 'Gist non trovato.' : 'Token non valido o senza permessi.');
-    var data = await res.json();
-    var file = data.files && data.files[GIST_FILENAME];
-    if(!file) throw new Error('Il gist non contiene il file dati atteso.');
-    var parsed = await ghReadFile(file);
-    var cards = (Array.isArray(parsed) ? parsed : []).filter(function(c){ return c && typeof c.code === 'string'; });
-    var remoteMeta = cleanMeta(null);
-    var metaFile = data.files[GIST_META_FILENAME];
-    if(metaFile){
-      try{ remoteMeta = cleanMeta(await ghReadFile(metaFile)); }catch(e){ /* file extra illeggibile: si riparte da vuoto */ }
-    }
-    return { cards: cards, deleted: remoteMeta.deleted, history: remoteMeta.history };
-  }
-
-  function ghFilesPayload(snap){
-    var files = {};
-    files[GIST_FILENAME] = { content: JSON.stringify(snap.cards, null, 2) };
-    files[GIST_META_FILENAME] = { content: JSON.stringify({ deleted: snap.deleted, history: snap.history }, null, 2) };
-    return files;
-  }
-
-  async function ghCreateGist(token, snap){
-    var files = ghFilesPayload(snap);
-    var res = await fetch('https://api.github.com/gists', {
-      method: 'POST',
-      headers: { 'Authorization': 'token ' + token, 'Accept': 'application/vnd.github+json', 'Content-Type': 'application/json' },
-      body: JSON.stringify({ description: 'One Piece TCG collection data', public: false, files: files })
-    });
-    if(!res.ok) throw new Error('Token non valido o senza permesso "gist".');
-    var data = await res.json();
-    return data.id;
-  }
-
-  async function ghUpdateGist(token, gistId, snap){
-    var res = await fetch('https://api.github.com/gists/' + gistId, {
-      method: 'PATCH',
-      headers: { 'Authorization': 'token ' + token, 'Accept': 'application/vnd.github+json', 'Content-Type': 'application/json' },
-      body: JSON.stringify({ files: ghFilesPayload(snap) })
-    });
-    if(!res.ok) throw new Error('Errore durante il salvataggio sul gist.');
-  }
-
-  function ghShowConnected(gistId){
-    document.getElementById('gh-disconnected').style.display = 'none';
-    document.getElementById('gh-connected').style.display = 'block';
-    document.getElementById('gh-gistid-display').value = gistId;
-  }
-  function ghShowDisconnected(){
-    document.getElementById('gh-disconnected').style.display = 'block';
-    document.getElementById('gh-connected').style.display = 'none';
-  }
-  function ghSetStatus(text){
-    var el = document.getElementById('gh-status');
-    if(el) el.textContent = text;
-  }
-
-  function ghTimestamp(){
+  function timeLabel(){
     return new Date().toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' });
   }
 
-  // Sincronizzazione a tre passi: legge il Gist, lo unisce ai dati locali, scrive il risultato
-  // solo se è cambiato qualcosa. Non si scrive mai senza aver prima letto con successo, quindi
-  // un dispositivo con dati vecchi (o offline) non può più sovrascrivere quelli aggiornati.
-  function ghSync(){
-    var creds = ghCreds();
-    if(!creds.token || !creds.gistId) return Promise.resolve();
-    if(ghSyncing){ ghSyncAgain = true; return ghSyncPromise; }
-    ghSyncing = true;
-    ghSetStatus('Aggiornamento…');
-    ghSyncPromise = ghFetchGist(creds.token, creds.gistId).then(function(remote){
-      var merged = mergeSnapshots(localSnapshot(), remote);
-      applySnapshot(merged);
-      if(canonSnapshot(merged) === canonSnapshot(remote)) return;
-      return ghUpdateGist(creds.token, creds.gistId, merged);
-    }).then(function(){
-      ghLastSync = Date.now();
-      ghSetStatus('Sincronizzato alle ' + ghTimestamp());
-    }, function(err){
-      ghSetStatus('Non sincronizzato — ' + String(err.message).replace(/\.$/, '') + '. Le modifiche restano su questo dispositivo e verranno unite al prossimo tentativo.');
-    }).then(function(){
-      ghSyncing = false;
-      if(ghSyncAgain){ ghSyncAgain = false; return ghSync(); }
-    });
-    return ghSyncPromise;
-  }
-
-  function ghSchedulePush(){
-    var creds = ghCreds();
-    if(!creds.token || !creds.gistId) return;
-    if(ghSyncTimer) clearTimeout(ghSyncTimer);
-    ghSyncTimer = setTimeout(ghSync, 900);
-  }
-
-  function ghInit(){
-    var creds = ghCreds();
-    if(!creds.token || !creds.gistId){ ghShowDisconnected(); return; }
-    ghShowConnected(creds.gistId);
-    ghSync();
-  }
-
   // ---- ACCOUNT GOOGLE (Firebase) ----
-  // Stessa logica della sync Gist (leggi, unisci, scrivi solo se cambia), ma il remoto è un documento
-  // Firestore per utente. window.fbInit viene chiamata dallo script module in fondo alla pagina
+  // Sync a tre passi (leggi, unisci, scrivi solo se cambia): il remoto è un documento Firestore per utente.
+  // Non si scrive mai senza aver prima letto, quindi un dispositivo con dati vecchi (o offline) non può
+  // sovrascrivere quelli aggiornati. window.fbInit viene chiamata dallo script module in fondo alla pagina
   // quando l'SDK Firebase è caricato; se non carica (offline) l'app resta sul solo salvataggio locale.
   var fb = null, fbUser = null, fbSyncing = false, fbSyncAgain = false, fbSyncTimer = null;
   var fbSyncPromise = null, fbLastSync = 0, fbLastOk = false;
@@ -812,7 +655,7 @@ OP01-003 | Nami | OP-01 Romance Dawn | C"></textarea>
       // le modifiche fatte nel frattempo non vengono sovrascritte.
       applySnapshot(mergeSnapshots(localSnapshot(), merged));
       fbLastSync = Date.now(); fbLastOk = true;
-      fbSetStatus('Sincronizzato alle ' + ghTimestamp());
+      fbSetStatus('Sincronizzato alle ' + timeLabel());
     }, function(err){
       fbLastOk = false;
       fbSetStatus('Non sincronizzato — ' + String(err.message).replace(/\.$/, '') + '. Le modifiche restano su questo dispositivo e verranno unite al prossimo tentativo.');
@@ -827,12 +670,6 @@ OP01-003 | Nami | OP-01 Romance Dawn | C"></textarea>
     if(!fbUser) return;
     if(fbSyncTimer) clearTimeout(fbSyncTimer);
     fbSyncTimer = setTimeout(fbSync, 900);
-  }
-
-  function snapSummary(s){
-    var owned = 0;
-    s.cards.forEach(function(c){ owned += Math.min(c.owned || 0, target(c)); });
-    return s.cards.length + ' carte (' + owned + ' copie), ' + Object.keys(s.history || {}).length + ' giorni di storico';
   }
 
   function escapeHtml(s){
@@ -1446,19 +1283,6 @@ OP01-003 | Nami | OP-01 Romance Dawn | C"></textarea>
 
   document.getElementById('fb-sync-now').addEventListener('click', function(){ fbSync(); });
 
-  // Unisce il Gist alla collezione locale (nessuna carta viene persa) e la carica nell'account.
-  document.getElementById('fb-import-gist').addEventListener('click', function(){
-    var creds = ghCreds(), out = document.getElementById('fb-import-msg');
-    if(!creds.token || !creds.gistId){ out.textContent = 'Nessun Gist collegato su questo dispositivo: collegalo prima dalla sezione "Gist" qui sotto.'; return; }
-    out.textContent = 'Lettura del Gist…';
-    ghFetchGist(creds.token, creds.gistId).then(function(remote){
-      var before = snapSummary(localSnapshot());
-      applySnapshot(mergeSnapshots(localSnapshot(), remote));
-      out.textContent = 'Gist: ' + snapSummary(remote) + '. Prima: ' + before + '. Ora: ' + snapSummary(localSnapshot()) + '.';
-      return fbSync();
-    }).catch(function(err){ out.textContent = err.message; });
-  });
-
   document.getElementById('fb-logout').addEventListener('click', function(){
     if(!confirm('Uscendo, i dati vengono rimossi da questo dispositivo (restano nel tuo account). Continuare?')) return;
     // Prima un'ultima sync: se fallisce non si cancella nulla.
@@ -1466,48 +1290,6 @@ OP01-003 | Nami | OP-01 Romance Dawn | C"></textarea>
       if(!fbLastOk){ showMsg('fb-msg', 'Impossibile sincronizzare: uscita annullata per non perdere dati.', false); return; }
       return fb.logout().then(function(){ applySnapshot({ cards: [], deleted: {}, history: {} }); });
     });
-  });
-
-  document.getElementById('gh-create-new').addEventListener('click', function(){
-    var token = document.getElementById('gh-token').value.trim();
-    if(!token){ showMsg('gh-msg', 'Inserisci il token.', false); return; }
-    showMsg('gh-msg', 'Creazione del gist in corso…', true);
-    ghCreateGist(token, localSnapshot()).then(function(gistId){
-      ghSaveCreds(token, gistId);
-      ghShowConnected(gistId);
-      ghSetStatus('Gist creato e collegato alle ' + ghTimestamp());
-    }).catch(function(err){
-      showMsg('gh-msg', err.message, false);
-    });
-  });
-
-  document.getElementById('gh-connect-existing').addEventListener('click', function(){
-    var token = document.getElementById('gh-token').value.trim();
-    var gistId = document.getElementById('gh-gistid').value.trim();
-    if(!token || !gistId){ showMsg('gh-msg', 'Inserisci token e Gist ID.', false); return; }
-    showMsg('gh-msg', 'Connessione in corso…', true);
-    ghFetchGist(token, gistId).then(function(remote){
-      if(state.cards.length && !confirm('Questo dispositivo contiene già delle carte. Unirle con quelle del Gist? Le carte più recenti vincono, nessuna viene persa.')){
-        showMsg('gh-msg', 'Collegamento annullato.', false);
-        return;
-      }
-      ghSaveCreds(token, gistId);
-      ghShowConnected(gistId);
-      return ghSync();
-    }).catch(function(err){
-      showMsg('gh-msg', err.message, false);
-    });
-  });
-
-  document.getElementById('gh-sync-now').addEventListener('click', function(){
-    ghSync();
-  });
-
-  document.getElementById('gh-disconnect').addEventListener('click', function(){
-    ghClearCreds();
-    ghShowDisconnected();
-    document.getElementById('gh-token').value = '';
-    document.getElementById('gh-gistid').value = '';
   });
 
   // ---- DIALOG DETTAGLI ----
@@ -1736,12 +1518,12 @@ OP01-003 | Nami | OP-01 Romance Dawn | C"></textarea>
   });
 
   loadData();
-  ghInit();
-  // Tornando all'app (tipico su mobile) si riallinea con il Gist, al massimo ogni 30 secondi.
+  // Pulizia della vecchia sync Gist: il token non serve più e non va lasciato in chiaro nel browser.
+  localStorage.removeItem('op-gh-token');
+  localStorage.removeItem('op-gh-gistid');
+  // Tornando all'app (tipico su mobile) si riallinea con l'account, al massimo ogni 30 secondi.
   document.addEventListener('visibilitychange', function(){
-    if(document.visibilityState !== 'visible') return;
-    if(Date.now() - ghLastSync > GH_SYNC_MIN_INTERVAL) ghSync();
-    if(Date.now() - fbLastSync > GH_SYNC_MIN_INTERVAL) fbSync();
+    if(document.visibilityState === 'visible' && Date.now() - fbLastSync > SYNC_MIN_INTERVAL) fbSync();
   });
   window.addEventListener('resize', function(){ renderList(); });
 })();
