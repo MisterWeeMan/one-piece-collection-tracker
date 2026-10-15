@@ -230,7 +230,7 @@
   .checkbox-row label{ font-size: 13.5px; }
   .btn{
     padding: 9px 14px; border-radius: 8px; border: 1px solid var(--border); background: var(--panel-2);
-    color: var(--text); font-size: 13.5px; font-weight: 600;
+    color: var(--text); font-size: 13.5px; font-weight: 600; text-decoration: none;
   }
   .btn-gold{ background: var(--gold); border-color: var(--gold); color:#2B2107; }
   .btn-danger{ background: transparent; border-color: var(--danger); color: var(--danger); }
@@ -466,6 +466,7 @@ OP01-003 | Nami | OP-01 Romance Dawn | C"></textarea>
     <dl class="detail-grid" id="detail-grid"></dl>
     <div class="btn-row" style="justify-content: space-between;">
       <button class="btn" id="detail-edit">Modifica</button>
+      <a class="btn" id="detail-cm" target="_blank" rel="noopener noreferrer">Cardmarket ↗</a>
       <button class="btn btn-gold" id="detail-close">Chiudi</button>
     </div>
     <p class="hint" id="detail-credit"></p>
@@ -1637,6 +1638,7 @@ OP01-003 | Nami | OP-01 Romance Dawn | C"></textarea>
       + (card.rarity ? '<span class="rarity-pill ' + rarityClass(card.rarity) + '">' + escapeHtml(card.rarity) + '</span>' : '')
       + (card.leader ? '<span class="leader-pill">Leader</span>' : '');
     document.getElementById('detail-head').innerHTML = head;
+    document.getElementById('detail-cm').href = 'https://www.cardmarket.com/it/OnePiece/Products/Search?searchString=' + encodeURIComponent(card.code);
     renderDetailGrid(card, null);
     document.getElementById('detail-variants').style.display = 'none';
     document.getElementById('detail-variants-title').style.display = 'none';
