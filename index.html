@@ -1138,7 +1138,7 @@ OP01-003 | Nami | OP-01 Romance Dawn | C"></textarea>
   // Account non autorizzato: si esce e si torna alla schermata di accesso. I dati locali non si toccano.
   function authDenied(){
     authRemember(false);
-    gateNotice = 'Questo account Google non è autorizzato. Accedi con l\'account giusto.';
+    gateNotice = 'Accesso non riuscito. Riprova con un altro account.';
     showGate(gateNotice);
     if(fb) fb.logout();
   }
