@@ -103,7 +103,7 @@
   .wf{ display:contents; }
   body:not(.view-checklist) .checklist-only{ display:none !important; }
   body:not(.view-wishlist) .wishlist-only{ display:none !important; }
-  body.view-stats #tb, body.view-settings #tb{ display:none; }
+  body.view-stats #tb, body.view-settings #tb, body.view-decks #tb{ display:none; }
   body.view-settings #list-container{ display:none; }
   body:not(.view-settings) #settings-pane{ display:none; }
   body:not(.view-checklist) .sets{ display:none; }
@@ -285,6 +285,26 @@
   }
   body:not(.view-checklist) .fab{ display:none; }
 
+  /* MAZZI */
+  .deck-bar{ margin-bottom:16px; }
+  .deck-grid{ display:grid; grid-template-columns:repeat(auto-fill, minmax(280px, 1fr)); gap:16px; }
+  .deck-card{ display:grid; grid-template-columns:64px minmax(0, 1fr); grid-template-rows:auto auto auto; align-content:center; gap:6px 14px; align-items:center; width:100%; padding:12px; text-align:left; border-radius:var(--radius); border:1px solid var(--border); background:var(--panel); color:var(--text); }
+  .deck-card.complete{ border-color:var(--gold-dim); }
+  .deck-card .art{ grid-row:1 / 4; width:64px; padding:0; cursor:inherit; }
+  .deck-card .dn{ font-weight:600; font-size:15px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .deck-card .stat-bar, .deck-card .stat-fill{ display:block; }
+  .deck-card .dv{ color:var(--text-muted); font-size:12.5px; font-variant-numeric:tabular-nums; }
+  .deck-head{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+  .deck-head h2{ margin:0; font:400 22px var(--font-display); flex:1 1 200px; min-width:0; overflow-wrap:anywhere; }
+  .deck-sum{ margin:12px 0 0; color:var(--text-muted); font-size:13.5px; }
+  .deck-note{ margin:6px 0 0; color:var(--text-muted); font-size:12px; }
+  .deck-sec{ margin:20px 0 10px; font:400 16px var(--font-display); color:var(--gold); }
+  .deck-need{ font-size:12.5px; color:var(--text-muted); font-variant-numeric:tabular-nums; }
+  .deck-need b{ color:var(--danger); font-weight:600; }
+  .tile .art:not([data-detail]){ cursor:default; }
+  details.deck-done > summary{ cursor:pointer; margin:20px 0 10px; color:var(--text-muted); font-size:14px; }
+  details.deck-done[open] > summary{ color:var(--gold); }
+
   /* BARRA IN BASSO (telefono) */
   .bnav{ display:none; }
 
@@ -315,8 +335,8 @@
       display:flex; align-items:center; justify-content:space-between; padding:6px; border-radius:99px;
       background:var(--bar); border:1px solid var(--border); box-shadow:0 8px 24px rgba(0,0,0,.5);
     }
-    .nb{ position:relative; display:flex; align-items:center; justify-content:center; gap:8px; height:48px; min-width:48px; padding:0 14px; border:0; border-radius:99px; background:none; color:var(--text-muted); font-weight:600; font-size:14px; }
-    .nb.on{ background:var(--gold); color:#2B2107; padding:0 20px; }
+    .nb{ position:relative; display:flex; align-items:center; justify-content:center; gap:8px; height:48px; min-width:44px; padding:0 10px; border:0; border-radius:99px; background:none; color:var(--text-muted); font-weight:600; font-size:14px; }
+    .nb.on{ background:var(--gold); color:#2B2107; padding:0 14px; }
     .nb .lbl{ display:none; }
     .nb.on .lbl{ display:inline; }
     .nb .count{ position:absolute; top:2px; right:0; background:var(--gold); color:#2B2107; font-weight:700; }
@@ -333,6 +353,7 @@
       <button class="sw on" data-view="checklist"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6h11M9 12h11M9 18h11"/><path d="M3.5 6.5l1.5 1.5 2.5-3M3.5 12.5l1.5 1.5 2.5-3M3.5 18.5l1.5 1.5 2.5-3"/></svg>Checklist</button>
       <button class="sw" data-view="wishlist"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.9 6.8 19.6l1-5.8L3.5 9.7l5.9-.9z"/></svg>Desideri<span class="count wish-count"></span></button>
       <button class="sw" data-view="stats"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 20V11M12 20V4M19 20v-6"/></svg>Statistiche</button>
+      <button class="sw" data-view="decks"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="7" width="13" height="13.5" rx="2"/><path d="M7.5 4h11a2 2 0 0 1 2 2v11"/></svg>Mazzi</button>
     </nav>
     <div class="tools">
       <button class="ibtn" data-view="settings" aria-label="Impostazioni"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 3v2.5M12 18.5V21M3 12h2.5M18.5 12H21M5.6 5.6l1.8 1.8M16.6 16.6l1.8 1.8M5.6 18.4l1.8-1.8M16.6 7.4l1.8-1.8"/></svg></button>
@@ -444,6 +465,7 @@ OP01-003 | Nami | OP-01 Romance Dawn | C"></textarea>
     <button class="nb on" data-view="checklist" aria-label="Checklist"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6h11M9 12h11M9 18h11"/><path d="M3.5 6.5l1.5 1.5 2.5-3M3.5 12.5l1.5 1.5 2.5-3M3.5 18.5l1.5 1.5 2.5-3"/></svg><span class="lbl">Checklist</span></button>
     <button class="nb" data-view="wishlist" aria-label="Desideri"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.9 6.8 19.6l1-5.8L3.5 9.7l5.9-.9z"/></svg><span class="lbl">Desideri</span><span class="count wish-count"></span></button>
     <button class="nb" data-view="stats" aria-label="Statistiche"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 20V11M12 20V4M19 20v-6"/></svg><span class="lbl">Statistiche</span></button>
+    <button class="nb" data-view="decks" aria-label="Mazzi"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="7" width="13" height="13.5" rx="2"/><path d="M7.5 4h11a2 2 0 0 1 2 2v11"/></svg><span class="lbl">Mazzi</span></button>
     <button class="nb" data-view="settings" aria-label="Impostazioni"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 3v2.5M12 18.5V21M3 12h2.5M18.5 12H21M5.6 5.6l1.8 1.8M16.6 16.6l1.8 1.8M5.6 18.4l1.8-1.8M16.6 7.4l1.8-1.8"/></svg><span class="lbl">Impostazioni</span></button>
   </nav>
 
@@ -471,6 +493,20 @@ OP01-003 | Nami | OP-01 Romance Dawn | C"></textarea>
       <button class="btn btn-gold" id="detail-close">Chiudi</button>
     </div>
     <p class="hint" id="detail-credit"></p>
+  </div>
+</div>
+
+<div class="overlay" id="deck-overlay">
+  <div class="modal">
+    <h3>Importa mazzo</h3>
+    <div class="field"><label for="deck-text">Mazzo</label><textarea id="deck-text" placeholder="Incolla qui il mazzo"></textarea></div>
+    <p class="hint" style="margin-top:0;">Formati: elenco JSON di onepiecetopdecks.com, righe <b>4xOP01-001</b> (OPTCGSim), codice o link di condivisione di oplaytcg.com.</p>
+    <div class="field" style="margin-top:10px;"><label for="deck-name">Nome (facoltativo)</label><input type="text" id="deck-name" maxlength="60" placeholder="Se vuoto, il codice del Leader" /></div>
+    <div class="msg" id="deck-preview"></div>
+    <div class="btn-row" style="margin-top:10px; justify-content:flex-end;">
+      <button class="btn" id="deck-cancel">Annulla</button>
+      <button class="btn btn-gold" id="deck-save" disabled>Importa</button>
+    </div>
   </div>
 </div>
 
@@ -606,6 +642,7 @@ OP01-003 | Nami | OP-01 Romance Dawn | C"></textarea>
     }catch(e){
       meta = { deleted: {}, history: {} };
     }
+    try{ decks = cleanDecks(JSON.parse(localStorage.getItem(DECKS_KEY))); }catch(e){ decks = cleanDecks(null); }
     render();
   }
 
@@ -718,6 +755,321 @@ OP01-003 | Nami | OP-01 Romance Dawn | C"></textarea>
     return new Date().toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' });
   }
 
+  // ---- MAZZI: lettura dei formati (funzioni pure, provate da scripts/check-deck-parser.mjs) ----
+  var DECK_CODE = /^[A-Z]{1,4}\d{0,2}-\d{3}$/;
+  var DECK_ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_';
+  var DECK_FAMILIES = ['OP', 'ST', 'EB', 'PRB', 'P'];
+
+  // Codice di condivisione di oplaytcg.com, versione "2": 6 bit per carattere, ultimo carattere = controllo.
+  // Formato ricavato osservando il sito e provato su mazzi reali; non è un'API ufficiale e può cambiare.
+  function decodeOplayDeck(code){
+    if(code.charAt(0) !== '2' || code.length < 3) return null;
+    var body = code.slice(1, -1), sum = 7, bits = [], i, b;
+    for(i = 0; i < body.length; i++) sum = (31 * sum + body.charCodeAt(i)) % 4093;
+    if(DECK_ALPHABET.charAt(sum % 64) !== code.charAt(code.length - 1)) return null;
+    for(i = 0; i < body.length; i++){
+      var v = DECK_ALPHABET.indexOf(body.charAt(i));
+      if(v < 0) return null;
+      for(b = 5; b >= 0; b--) bits.push((v >> b) & 1);
+    }
+    var pos = 0;
+    function read(n){
+      if(pos + n > bits.length) throw new Error('fine del codice');
+      var x = 0;
+      for(var k = 0; k < n; k++) x = x * 2 + bits[pos++];
+      return x;
+    }
+    // Una carta: [stesso set della precedente?] famiglia, set, numero [, copie].
+    function readCard(withQty, prev){
+      var prefix, set, j;
+      if(withQty && read(1)){
+        prefix = prev.prefix; set = prev.set;
+      } else {
+        var f = read(4);
+        if(f === 15){ // codice scritto per esteso
+          var len = read(5) + 1, text = '';
+          for(j = 0; j < len; j++) text += String.fromCharCode(read(7));
+          return { code: text, qty: withQty ? read(7) : 1, part: null };
+        }
+        if(f === 14){
+          var n = read(2) + 1;
+          prefix = '';
+          for(j = 0; j < n; j++) prefix += String.fromCharCode(65 + read(5));
+        } else if(f < DECK_FAMILIES.length){
+          prefix = DECK_FAMILIES[f];
+        } else {
+          throw new Error('famiglia sconosciuta');
+        }
+        set = read(7);
+      }
+      var num = read(10);
+      return {
+        code: prefix + (set ? String(set).padStart(2, '0') : '') + '-' + String(num).padStart(3, '0'),
+        qty: withQty ? read(2) + 1 : 1,
+        part: { prefix: prefix, set: set }
+      };
+    }
+    try{
+      var cards = [], prev = null, r;
+      if(read(1)){ r = readCard(false, null); cards.push([r.code, 1]); prev = r.part; }
+      var count = read(7);
+      if(count > 80) return null;
+      for(i = 0; i < count; i++){ r = readCard(true, prev); prev = r.part; cards.push([r.code, r.qty]); }
+      var ok = cards.length > 0 && cards.every(function(c){ return DECK_CODE.test(c[0]) && c[1] > 0; });
+      return ok ? { leader: cards.length > count ? cards[0][0] : null, cards: cards } : null;
+    }catch(e){
+      return null;
+    }
+  }
+
+  // Legge un mazzo incollato: elenco JSON di onepiecetopdecks, righe NxCODICE (OPTCGSim) o codice/link di oplaytcg.
+  // Restituisce { leader, cards: [[codice, copie], ...] } (il Leader è la prima carta) oppure { error }.
+  function parseDeck(text){
+    text = String(text || '').trim();
+    if(!text) return { error: 'Incolla un mazzo.' };
+    var entries = [];
+    if(text.charAt(0) === '['){
+      var arr = null;
+      try{ arr = JSON.parse(text); }catch(e){}
+      if(!Array.isArray(arr)) return { error: 'Elenco JSON non valido.' };
+      // La prima voce è un'intestazione di testo ("Exported from ..."): non è un codice, quindi si scarta.
+      arr.forEach(function(x){
+        var c = String(x).trim().toUpperCase();
+        if(DECK_CODE.test(c)) entries.push([c, 1]);
+      });
+    } else {
+      var lines = text.split(/\r?\n/).map(function(l){ return l.trim(); }).filter(Boolean);
+      var re = /^(\d{1,2})\s*x\s*([A-Z]{1,4}\d{0,2}-\d{3})$/i;
+      if(lines.every(function(l){ return re.test(l); })){
+        lines.forEach(function(l){ var m = l.match(re); entries.push([m[2].toUpperCase(), parseInt(m[1], 10)]); });
+      } else {
+        var link = text.match(/[?&]d=([A-Za-z0-9_-]+)/), code = link ? link[1] : text;
+        var deck = /^[A-Za-z0-9_-]+$/.test(code) ? decodeOplayDeck(code) : null;
+        if(deck) return deck;
+        var some = lines.some(function(l){ return re.test(l); });
+        return { error: some ? 'Alcune righe non sono nel formato 4xOP01-001.' : 'Formato non riconosciuto o codice non valido.' };
+      }
+    }
+    var cards = [], index = {};
+    entries.forEach(function(e){
+      if(index.hasOwnProperty(e[0])) cards[index[e[0]]][1] += e[1];
+      else { index[e[0]] = cards.length; cards.push([e[0], e[1]]); }
+    });
+    if(!cards.length) return { error: 'Nessuna carta riconosciuta.' };
+    return { leader: cards[0][1] === 1 ? cards[0][0] : null, cards: cards };
+  }
+  // ---- fine lettura mazzi ----
+
+  // ---- MAZZI: dati, sincronizzazione e vista ----
+  // I mazzi si salvano a parte dalla collezione ({ list, deleted }) e hanno la stessa logica di merge:
+  // vince il mazzo con updatedAt maggiore, una lapide in "deleted" impedisce che un mazzo eliminato riappaia.
+  var DECKS_KEY = 'op-collection-decks';
+  var decks = { list: [], deleted: {} };
+  var deckOpenId = null, deckDraft = null;
+
+  function cleanDecks(raw){
+    raw = raw && typeof raw === 'object' ? raw : {};
+    var list = (Array.isArray(raw.list) ? raw.list : []).filter(function(d){
+      return d && typeof d.id === 'string' && Array.isArray(d.cards);
+    }).map(function(d){
+      d.cards = d.cards.filter(function(c){ return Array.isArray(c) && typeof c[0] === 'string' && c[1] > 0; });
+      return d;
+    });
+    return { list: list, deleted: raw.deleted && typeof raw.deleted === 'object' ? raw.deleted : {} };
+  }
+
+  function mergeDecks(local, remote){
+    var deleted = {};
+    [remote.deleted, local.deleted].forEach(function(d){
+      Object.keys(d).forEach(function(id){ if(!deleted.hasOwnProperty(id) || d[id] > deleted[id]) deleted[id] = d[id]; });
+    });
+    var byId = {};
+    remote.list.forEach(function(d){ byId[d.id] = d; });
+    local.list.forEach(function(d){
+      var r = byId[d.id];
+      if(!r || (d.updatedAt || 0) > (r.updatedAt || 0)) byId[d.id] = d;
+    });
+    var list = [];
+    Object.keys(byId).forEach(function(id){
+      var d = byId[id];
+      if(deleted.hasOwnProperty(id)){
+        if((d.updatedAt || 0) <= deleted[id]) return;
+        delete deleted[id];
+      }
+      list.push(d);
+    });
+    return { list: list, deleted: deleted };
+  }
+
+  function canonDecks(s){
+    var list = s.list.slice().sort(function(a, b){ return a.id < b.id ? -1 : a.id > b.id ? 1 : 0; });
+    var deleted = Object.keys(s.deleted).sort().map(function(k){ return [k, s.deleted[k]]; });
+    return JSON.stringify({ list: list, deleted: deleted });
+  }
+
+  function persistDecks(){
+    try{
+      localStorage.setItem(DECKS_KEY, JSON.stringify(decks));
+    }catch(e){
+      console.error('Salvataggio mazzi fallito', e);
+    }
+  }
+  function saveDecks(){ persistDecks(); fbSchedulePush(); }
+  function applyDecks(s){
+    decks = cleanDecks(s);
+    persistDecks();
+    if(state.view === 'decks') renderList();
+  }
+
+  function currentDeck(){
+    return decks.list.filter(function(d){ return d.id === deckOpenId; })[0] || null;
+  }
+  function deckName(d){ return d.name || d.leader || 'Mazzo'; }
+
+  // Per ogni carta del mazzo: copie richieste, copie possedute. Ogni mazzo è valutato da solo (le copie
+  // non si "prenotano" tra mazzi diversi). noSet: la carta non c'è e nemmeno il suo set è nella collezione.
+  function deckStatus(deck){
+    var sets = {};
+    state.cards.forEach(function(c){ var m = c.code.match(/^(.*)-/); if(m) sets[m[1]] = true; });
+    var res = { need: 0, have: 0, missing: [], done: [] };
+    deck.cards.forEach(function(c){
+      var card = findCard(c[0]), owned = card ? Math.min(card.owned || 0, c[1]) : 0;
+      res.need += c[1];
+      res.have += owned;
+      var item = { code: c[0], need: c[1], owned: owned, noSet: !card && !sets[c[0].replace(/-.*/, '')] };
+      (owned < c[1] ? res.missing : res.done).push(item);
+    });
+    return res;
+  }
+
+  function deckImgHtml(code){
+    var img = imgFor(code);
+    return img ? '<img src="' + img + '" alt="" loading="lazy" referrerpolicy="no-referrer">' : '';
+  }
+
+  function deckCardHtml(it){
+    var d = it.d, s = it.s, miss = s.need - s.have, pct = s.need ? Math.round(s.have / s.need * 100) : 0;
+    return '<button class="deck-card' + (miss === 0 ? ' complete' : '') + '" data-deck-open="' + escapeHtml(d.id) + '">'
+      + '<span class="art">' + (d.leader ? deckImgHtml(d.leader) : '') + '</span>'
+      + '<span class="dn">' + escapeHtml(deckName(d)) + '</span>'
+      + '<span class="stat-bar"><span class="stat-fill' + (miss === 0 ? ' full' : '') + '" style="width:' + pct + '%"></span></span>'
+      + '<span class="dv">' + (miss === 0 ? 'Completo · ' + s.need + ' carte' : s.have + ' / ' + s.need + ' carte · mancano ' + miss) + '</span></button>';
+  }
+
+  function deckTileHtml(it){
+    var card = findCard(it.code), code = escapeHtml(it.code), detail = card ? ' data-detail="' + code + '"' : '';
+    var need = it.owned < it.need
+      ? '<b>Mancano ' + (it.need - it.owned) + '</b> · hai ' + it.owned + ' su ' + it.need
+      : 'Hai ' + it.owned + ' su ' + it.need;
+    return '<div class="tile' + (it.owned >= it.need ? ' complete' : '') + '">'
+      + '<div class="art"' + detail + '>' + deckImgHtml(it.code) + '<span class="ac">' + code + '</span></div>'
+      + '<div class="meta"><span class="name"' + detail + '>' + escapeHtml(card ? card.name : it.code) + '</span>'
+      + '<span class="deck-need">' + need + '</span>'
+      + (it.noSet ? '<span class="deck-note" style="margin:0;">set non nella collezione</span>' : '') + '</div></div>';
+  }
+
+  function deckDetailHtml(deck){
+    var s = deckStatus(deck), miss = s.need - s.have;
+    var html = '<div class="deck-head"><button class="btn" data-deck-back>← Mazzi</button><h2>' + escapeHtml(deckName(deck)) + '</h2>'
+      + '<button class="btn" data-deck-rename>Rinomina</button><button class="btn btn-danger" data-deck-delete>Elimina</button></div>';
+    html += '<p class="deck-sum">' + (miss === 0 ? 'Mazzo completo: hai tutte le ' + s.need + ' carte.' : 'Hai ' + s.have + ' carte su ' + s.need + ': ne mancano ' + miss + '.') + '</p>';
+    if(s.need !== 51) html += '<p class="deck-note">Il mazzo ha ' + s.need + ' carte invece di 51 (Leader + 50).</p>';
+    var unknown = catalog ? deck.cards.filter(function(c){ return !catalog[c[0]]; }).map(function(c){ return c[0]; }) : [];
+    if(unknown.length) html += '<p class="deck-note">Non presenti nel catalogo: ' + escapeHtml(unknown.join(', ')) + '.</p>';
+    if(s.missing.length) html += '<h3 class="deck-sec">Mancano (' + s.missing.length + ')</h3><div class="grid">' + s.missing.map(deckTileHtml).join('') + '</div>';
+    if(s.done.length) html += '<details class="deck-done"><summary>Già complete (' + s.done.length + ')</summary><div class="grid">' + s.done.map(deckTileHtml).join('') + '</div></details>';
+    return html;
+  }
+
+  function renderDecks(){
+    var container = document.getElementById('list-container');
+    var deck = deckOpenId ? currentDeck() : null;
+    if(!deck) deckOpenId = null;
+    if(deck){ container.innerHTML = deckDetailHtml(deck); return; }
+    var html = '<div class="deck-bar"><button class="btn btn-gold" data-deck-import>+ Importa mazzo</button></div>';
+    if(!decks.list.length){
+      container.innerHTML = html + '<div class="empty-state"><p><b>Nessun mazzo.</b></p>'
+        + '<p>Importa un mazzo da onepiecetopdecks.com, OPTCGSim o oplaytcg.com per vedere cosa ti manca.</p></div>';
+      return;
+    }
+    // Prima i mazzi più vicini al completamento.
+    var items = decks.list.map(function(d){ return { d: d, s: deckStatus(d) }; });
+    items.sort(function(a, b){
+      var ra = a.s.need ? a.s.have / a.s.need : 0, rb = b.s.need ? b.s.have / b.s.need : 0;
+      return rb - ra || deckName(a.d).localeCompare(deckName(b.d));
+    });
+    container.innerHTML = html + '<div class="deck-grid">' + items.map(deckCardHtml).join('') + '</div>';
+  }
+
+  function renameDeck(){
+    var d = currentDeck();
+    if(!d) return;
+    var name = prompt('Nome del mazzo', deckName(d));
+    if(name === null) return;
+    d.name = name.trim().slice(0, 60);
+    d.updatedAt = Date.now();
+    saveDecks();
+    renderDecks();
+  }
+
+  function deleteDeck(){
+    var d = currentDeck();
+    if(!d || !confirm('Eliminare il mazzo "' + deckName(d) + '"?')) return;
+    decks.list = decks.list.filter(function(x){ return x.id !== d.id; });
+    decks.deleted[d.id] = Date.now();
+    deckOpenId = null;
+    saveDecks();
+    renderList();
+    renderHead();
+  }
+
+  function openDeckImport(){
+    document.getElementById('deck-text').value = '';
+    document.getElementById('deck-name').value = '';
+    updateDeckPreview();
+    document.getElementById('deck-overlay').classList.add('open');
+    document.getElementById('deck-text').focus();
+  }
+  function closeDeckImport(){ document.getElementById('deck-overlay').classList.remove('open'); }
+
+  function updateDeckPreview(){
+    var box = document.getElementById('deck-preview'), save = document.getElementById('deck-save');
+    var text = document.getElementById('deck-text').value;
+    deckDraft = null;
+    save.disabled = true;
+    if(!text.trim()){ box.className = 'msg'; return; }
+    var res = parseDeck(text);
+    if(res.error){ box.textContent = res.error; box.className = 'msg show err'; return; }
+    deckDraft = res;
+    save.disabled = false;
+    var total = res.cards.reduce(function(n, c){ return n + c[1]; }, 0);
+    var msg = (res.leader ? 'Leader ' + res.leader + ' · ' : '') + res.cards.length + ' carte diverse · ' + total + ' in totale.';
+    if(total !== 51) msg += ' Attenzione: di solito sono 51 (Leader + 50).';
+    var unknown = catalog ? res.cards.filter(function(c){ return !catalog[c[0]]; }).map(function(c){ return c[0]; }) : [];
+    if(unknown.length) msg += ' Non presenti nel catalogo: ' + unknown.join(', ') + '.';
+    box.textContent = msg;
+    box.className = 'msg show ok';
+  }
+
+  document.getElementById('deck-text').addEventListener('input', updateDeckPreview);
+  document.getElementById('deck-cancel').addEventListener('click', closeDeckImport);
+  document.getElementById('deck-overlay').addEventListener('click', function(e){
+    if(e.target.id === 'deck-overlay') closeDeckImport();
+  });
+  document.getElementById('deck-save').addEventListener('click', function(){
+    if(!deckDraft) return;
+    var now = Date.now();
+    decks.list.push({
+      id: 'd' + now.toString(36) + Math.random().toString(36).slice(2, 7),
+      name: document.getElementById('deck-name').value.trim().slice(0, 60) || deckDraft.leader || '',
+      leader: deckDraft.leader, cards: deckDraft.cards, createdAt: now, updatedAt: now
+    });
+    saveDecks();
+    closeDeckImport();
+    renderList();
+    renderHead();
+  });
+
   // ---- ACCOUNT GOOGLE (Firebase) ----
   // Sync a tre passi (leggi, unisci, scrivi solo se cambia): il remoto è un documento Firestore per utente.
   // Non si scrive mai senza aver prima letto, quindi un dispositivo con dati vecchi (o offline) non può
@@ -759,6 +1111,13 @@ OP01-003 | Nami | OP-01 Romance Dawn | C"></textarea>
       // Il merge è avvenuto prima del commit: si riunisce con lo stato locale di adesso, così
       // le modifiche fatte nel frattempo non vengono sovrascritte.
       applySnapshot(mergeSnapshots(localSnapshot(), merged));
+      // I mazzi stanno in un documento a parte: una pagina vecchia, che non li conosce, non può sovrascriverli.
+      return fb.sync(fbUser.uid, function(raw){
+        var remote = cleanDecks(raw), m = mergeDecks(decks, remote);
+        return { merged: m, write: canonDecks(m) !== canonDecks(remote) };
+      }, 'decks');
+    }).then(function(mergedDecks){
+      applyDecks(mergeDecks(decks, cleanDecks(mergedDecks)));
       fbLastSync = Date.now(); fbLastOk = true;
       fbSetStatus('Sincronizzato alle ' + timeLabel());
     }, function(err){
@@ -895,6 +1254,9 @@ OP01-003 | Nami | OP-01 Romance Dawn | C"></textarea>
       var n = state.cards.filter(function(c){ return c.wishlist; }).length;
       title = 'Desideri';
       count = n ? n + (n === 1 ? ' carta' : ' carte') : '';
+    } else if(state.view === 'decks'){
+      title = 'Mazzi';
+      count = decks.list.length ? decks.list.length + (decks.list.length === 1 ? ' mazzo' : ' mazzi') : '';
     } else {
       title = state.view === 'stats' ? 'Statistiche' : 'Impostazioni';
     }
@@ -1128,12 +1490,13 @@ OP01-003 | Nami | OP-01 Romance Dawn | C"></textarea>
 
   function setView(v){
     state.view = v;
+    if(v === 'decks') deckOpenId = null;
     document.querySelectorAll('[data-view]').forEach(function(b){
       var on = b.getAttribute('data-view') === v;
       b.classList.toggle('on', on);
       if(on) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current');
     });
-    ['checklist', 'wishlist', 'stats', 'settings'].forEach(function(n){ document.body.classList.toggle('view-' + n, n === v); });
+    ['checklist', 'wishlist', 'stats', 'decks', 'settings'].forEach(function(n){ document.body.classList.toggle('view-' + n, n === v); });
     closeSheet();
     renderRail();
     renderList();
@@ -1230,6 +1593,7 @@ OP01-003 | Nami | OP-01 Romance Dawn | C"></textarea>
     markFilters();
     if(state.view === 'settings') return;
     if(state.view === 'wishlist'){ renderWishlist(); return; }
+    if(state.view === 'decks'){ renderDecks(); return; }
     if(state.view === 'stats'){ renderStats(); return; }
     var container = document.getElementById('list-container');
     if(state.cards.length === 0){
@@ -1331,6 +1695,12 @@ OP01-003 | Nami | OP-01 Romance Dawn | C"></textarea>
   }, true);
 
   document.getElementById('list-container').addEventListener('click', function(e){
+    var deckOpen = e.target.closest('[data-deck-open]');
+    if(deckOpen){ deckOpenId = deckOpen.getAttribute('data-deck-open'); renderDecks(); window.scrollTo(0, 0); return; }
+    if(e.target.closest('[data-deck-back]')){ deckOpenId = null; renderDecks(); window.scrollTo(0, 0); return; }
+    if(e.target.closest('[data-deck-import]')){ openDeckImport(); return; }
+    if(e.target.closest('[data-deck-rename]')){ renameDeck(); return; }
+    if(e.target.closest('[data-deck-delete]')){ deleteDeck(); return; }
     var goto = e.target.closest('[data-goto-set]');
     if(goto){ goToSet(goto.getAttribute('data-goto-set')); return; }
     var wish = e.target.closest('.wish-btn');
@@ -1509,7 +1879,7 @@ OP01-003 | Nami | OP-01 Romance Dawn | C"></textarea>
     // Prima un'ultima sync: se fallisce non si cancella nulla.
     fbSync().then(function(){
       if(!fbLastOk){ showMsg('fb-msg', 'Impossibile sincronizzare: uscita annullata per non perdere dati.', false); return; }
-      return fb.logout().then(function(){ applySnapshot({ cards: [], deleted: {}, history: {} }); });
+      return fb.logout().then(function(){ applySnapshot({ cards: [], deleted: {}, history: {} }); applyDecks(null); });
     });
   });
 
@@ -1678,7 +2048,7 @@ OP01-003 | Nami | OP-01 Romance Dawn | C"></textarea>
     if(code) openEdit(code);
   });
   document.addEventListener('keydown', function(e){
-    if(e.key === 'Escape'){ if(detailCode) closeDetail(); closeSheet(); }
+    if(e.key === 'Escape'){ if(detailCode) closeDetail(); closeSheet(); closeDeckImport(); }
   });
 
   function openEdit(code){
@@ -1748,7 +2118,7 @@ OP01-003 | Nami | OP-01 Romance Dawn | C"></textarea>
     document.getElementById('catalog-info').textContent = n
       ? n.toLocaleString('it-IT') + ' codici' + (d && !isNaN(d) ? ' · aggiornato il ' + d.toLocaleDateString('it-IT', { day: 'numeric', month: 'long', year: 'numeric' }) : '')
       : 'non disponibile';
-    if(state.view === 'checklist') renderList();
+    if(state.view === 'checklist' || state.view === 'decks') renderList();
   });
   // Pulizia della vecchia sync Gist: il token non serve più e non va lasciato in chiaro nel browser.
   localStorage.removeItem('op-gh-token');
@@ -1784,8 +2154,8 @@ OP01-003 | Nami | OP-01 Romance Dawn | C"></textarea>
     // Un solo documento per utente con l'intero snapshot come stringa JSON (evita i valori undefined
     // che Firestore rifiuta). ponytail: limite 1 MiB per documento (~6000 carte), poi un documento per set.
     // mergeFn(remote) -> { merged, write }: la transazione rilegge e riprova se il documento cambia nel frattempo.
-    sync: (uid, mergeFn) => runTransaction(db, async tx => {
-      const ref = doc(db, 'users', uid, 'data', 'collection');
+    sync: (uid, mergeFn, name = 'collection') => runTransaction(db, async tx => {
+      const ref = doc(db, 'users', uid, 'data', name);
       const snap = await tx.get(ref);
       const remote = snap.exists() ? JSON.parse(snap.data().data) : {};
       const { merged, write } = mergeFn(remote);
