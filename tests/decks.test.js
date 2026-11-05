@@ -1,13 +1,13 @@
-// Lettura dei formati di mazzo (JSON, NxCODICE, codice oplaytcg) e calcolo delle carte mancanti.
-// Carte inventate (ZZ01-...), tranne i 3 codici di condivisione oplaytcg reali già usati prima in
-// scripts/check-deck-parser.mjs (mazzi pubblici, nessun dato della collezione).
+// Reading of the deck formats (JSON, NxCODE, oplaytcg code) and the missing-cards calculation.
+// Made-up cards (ZZ01-...), except the 3 real oplaytcg share codes previously used in
+// scripts/check-deck-parser.mjs (public decks, no collection data).
 var test = require('node:test');
 var assert = require('node:assert/strict');
 var L = require('../logic.js');
 
 var total = function(d){ return d.cards.reduce(function(n, c){ return n + c[1]; }, 0); };
 
-// ---- mazzi reali (stesso mazzo in JSON e in righe) ----
+// ---- real decks (same deck as JSON and as lines) ----
 var JSON_DECK = '["Exported from onepiecetopdecks.com","EB05-010","OP09-106","OP09-106","OP09-106","OP09-106","OP13-113","OP13-113","OP13-113","OP13-113","EB05-050","EB05-050","EB05-050","EB05-050","EB05-057","EB05-057","EB05-057","EB05-057","OP17-109","OP17-109","OP17-109","OP17-109","EB05-052","EB05-052","EB05-052","EB05-055","EB05-055","EB05-055","EB05-055","OP14-108","OP14-108","OP14-108","OP14-108","OP17-114","OP17-114","EB03-055","EB03-055","EB03-055","EB04-018","EB04-018","EB04-018","OP13-031","OP13-031","EB05-016","EB05-016","EB05-016","EB05-016","OP17-022","OP17-022","OP17-022","OP14-118","OP14-118"]';
 var LINES_DECK = '1xEB05-010\n4xOP09-106\n4xOP13-113\n4xEB05-050\n4xEB05-057\n4xOP17-109\n3xEB05-052\n4xEB05-055\n4xOP14-108\n2xOP17-114\n3xEB03-055\n3xEB04-018\n2xOP13-031\n4xEB05-016\n3xOP17-022\n2xOP14-118\n';
 
@@ -69,12 +69,12 @@ test('parseDeck: nel JSON le voci che non sono codici si scartano', function(){
   assert.deepEqual(d.cards, [['ZZ01-001', 1]]);
 });
 
-// ---- encoder di prova per i codici oplaytcg (versione 2), per coprire i rami che i mazzi reali non toccano ----
+// ---- test encoder for oplaytcg codes (version 2), to cover the branches the real decks do not reach ----
 var ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_';
 function Bits(){ this.b = []; }
 Bits.prototype.put = function(n, v){ for(var i = n - 1; i >= 0; i--) this.b.push((v >> i) & 1); return this; };
 var FAM = { OP: 0, ST: 1, EB: 2, PRB: 3, P: 4 };
-// Una carta: { same:true } | { fam, set } | { custom:'XY', set } | { raw:'ZZ99-123' }, più num e qty.
+// One card: { same:true } | { fam, set } | { custom:'XY', set } | { raw:'ZZ99-123' }, plus num and qty.
 function putCard(w, c, withQty){
   if(c.raw !== undefined){
     if(withQty) w.put(1, 0);
@@ -115,7 +115,7 @@ function encode(leader, cards, count, fixSum){
 test('oplay: Leader + carte con tutti i tipi di codice (famiglia, stesso set, lettere, per esteso)', function(){
   var code = encode({ fam: 'OP', set: 13, num: 1 }, [
     { fam: 'OP', set: 13, num: 5, qty: 4 },
-    { same: true, num: 6, qty: 3 },       // stesso set della precedente
+    { same: true, num: 6, qty: 3 },       // same set as the previous one
     { fam: 'ST', set: 1, num: 2, qty: 2 },
     { fam: 'P', set: 0, num: 3, qty: 1 }, // promo: "P-003"
     { custom: 'XY', set: 3, num: 7, qty: 2 },
@@ -160,7 +160,7 @@ test('oplay: versione diversa da "2" o codice troppo corto = errore', function()
   assert.equal(L.decodeOplayDeck(''), null);
 });
 
-// ---- carte mancanti ----
+// ---- missing cards ----
 function owned(code, n){ return { code: code, name: 'Carta ' + code, set: 'Set Finto', rarity: 'C', leader: false, owned: n }; }
 
 test('deckStatus: conta solo le copie richieste e separa mancanti e complete', function(){

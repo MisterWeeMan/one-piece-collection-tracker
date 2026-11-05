@@ -1,18 +1,18 @@
-// Genera card-catalog.json: per ogni codice carta, i dati strutturati (tipo, colore, costo, ...) e
-// l'elenco delle versioni (base, parallel, box topper, ...) con l'id prodotto TCGplayer da cui
-// l'app ricava le immagini. Fonte: https://tcgcsv.com (mirror giornaliero dell'API TCGplayer).
+// Generates card-catalog.json: for each card code, the structured data (type, color, cost, ...) and
+// the list of versions (base, parallel, box topper, ...) with the TCGplayer product id the
+// app derives the images from. Source: https://tcgcsv.com (daily mirror of the TCGplayer API).
 //
-// Uso (Node 18+):  node scripts/build-catalog.mjs
-// Va rilanciato quando esce un set nuovo; poi si carica card-catalog.json insieme a index.html.
-// Il testo degli effetti (Description) NON viene copiato di proposito.
+// Usage (Node 18+):  node scripts/build-catalog.mjs
+// Re-run when a new set comes out; then commit card-catalog.json together with index.html.
+// The effect text (Description) is deliberately NOT copied.
 import { writeFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 
-const BASE = 'https://tcgcsv.com/tcgplayer/68'; // 68 = categoria "One Piece Card Game"
+const BASE = 'https://tcgcsv.com/tcgplayer/68'; // 68 = category "One Piece Card Game"
 const OUT = fileURLToPath(new URL('../card-catalog.json', import.meta.url));
 const DELAY_MS = 120;
 
-// Il servizio rifiuta (401) lo user-agent generico di Node: ci si identifica con uno descrittivo.
+// The service rejects (401) Node's generic user agent: we identify ourselves with a descriptive one.
 const HEADERS = { 'User-Agent': 'one-piece-collection-tracker/1.0 (personal hobby app; catalog build script)' };
 
 const sleep = ms => new Promise(r => setTimeout(r, ms));
@@ -36,20 +36,20 @@ const ext = (product, name) => {
   return e && String(e.value).trim() ? String(e.value).trim() : '';
 };
 
-// Nome prodotto, ad es. "Nome (003) (Parallel)", "Nome (Alternate Art)", "Nome (Promotion Pack 2022)",
-// "Nome (001) (Offline Regional 2024 Vol. 2) [Winner]". Le etichette di versione sono le parentesi tonde
-// e quadre che NON sono il numero della carta: se c'è un "(NNN)" contano solo quelle dopo di esso
-// (quelle prima fanno parte del nome della carta, es. "Mr.1 (Daz.Bonez) (018)").
+// Product name, e.g. "Name (003) (Parallel)", "Name (Alternate Art)", "Name (Promotion Pack 2022)",
+// "Name (001) (Offline Regional 2024 Vol. 2) [Winner]". Version labels are the round
+// and square brackets that are NOT the card number: if there is a "(NNN)" only the ones after it
+// count (the ones before are part of the card name, e.g. "Mr.1 (Daz.Bonez) (018)").
 function variantTags(name) {
   const num = [...name.matchAll(/\((\d{1,3})\)/g)].pop();
   const rest = num ? name.slice(num.index + num[0].length) : name;
   return [...rest.matchAll(/[(\[]([^)\]]+)[)\]]/g)]
     .map(t => t[1].trim())
-    .filter(t => t && !/^\d{1,3}$/.test(t) && !/^[A-Z]+\d+-\d+$/i.test(t)); // numero o codice della carta
+    .filter(t => t && !/^\d{1,3}$/.test(t) && !/^[A-Z]+\d+-\d+$/i.test(t)); // card number or code
 }
 
-// Le sigle dei gruppi non sono omogenee ("OP01", "ST-01", "OP14-EB04", "OP15 RE", "OP-PR"): un gruppo
-// è "di origine" per un codice se la sigla, senza trattini e spazi, inizia con il prefisso del codice.
+// Group abbreviations are not uniform ("OP01", "ST-01", "OP14-EB04", "OP15 RE", "OP-PR"): a group
+// is the "origin" for a code if the abbreviation, without dashes and spaces, starts with the code prefix.
 const codePrefix = code => (code.match(/^([A-Z]+\d+)-/) || [])[1] || '';
 const isNative = (code, abbr) => {
   const prefix = codePrefix(code);
@@ -67,10 +67,10 @@ for (const g of groups) {
   const list = await getJson(`${BASE}/${g.groupId}/products`);
   for (const p of list) {
     const code = ext(p, 'Number').toUpperCase();
-    if (!code) continue; // confezioni, box, carte DON!!
+    if (!code) continue; // packs, boxes, DON!! cards
     products++;
     const entry = cards[code] || (cards[code] = { variants: [] });
-    // I dati strutturati sono uguali per tutte le versioni: si tengono quelli della prima.
+    // The structured data are the same for all versions: keep those of the first one.
     const fields = {
       type: ext(p, 'CardType'), color: ext(p, 'Color'), cost: ext(p, 'Cost'), power: ext(p, 'Power'),
       counter: ext(p, 'Counterplus'), life: ext(p, 'Life'), attribute: ext(p, 'Attribute'), subtypes: ext(p, 'Subtypes')
@@ -82,10 +82,10 @@ for (const g of groups) {
   }
 }
 
-// Per ogni codice: la base è il primo prodotto senza etichetta del set d'origine (altrimenti il primo
-// senza etichetta in assoluto); le altre versioni sono quelle con un'etichetta esplicita (Parallel,
-// Alternate Art, promo...). I prodotti senza etichetta di altri set sono ristampe con la stessa
-// illustrazione della base e vengono scartati. Etichette uguali vengono numerate (#2, #3).
+// For each code: the base is the first unlabeled product of the origin set (otherwise the first
+// unlabeled one overall); the other versions are those with an explicit label (Parallel,
+// Alternate Art, promo...). Unlabeled products from other sets are reprints with the same
+// artwork as the base and are discarded. Equal labels get numbered (#2, #3).
 const out = {};
 for (const code of Object.keys(cards).sort()) {
   const e = cards[code];

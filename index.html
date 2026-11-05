@@ -25,12 +25,12 @@
     --font-mono: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
   }
   *{ box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-  html,body{ margin:0; padding:0; background:var(--bg); color:var(--text); font-family:var(--font-body); }
+  html,body{ margin:0; padding:0; background:var(--bg); color:var(--text); font-family:var(--font-body); cursor:default; }
   button{ font-family: inherit; color: inherit; cursor:pointer; }
   input, select, textarea{ font-family: inherit; color: inherit; }
   .i{ width:20px; height:20px; flex:0 0 auto; fill:none; stroke:currentColor; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; display:block; }
 
-  /* LAYOUT: barra in alto + colonna set + contenuto (desktop); barra in basso + selettore set (telefono) */
+  /* LAYOUT: top bar + set column + content (desktop); bottom bar + set selector (phone) */
   .shell{ min-height:100vh; min-height:100dvh; display:flex; flex-direction:column; }
   .top{ display:flex; align-items:center; gap:20px; flex-wrap:wrap; padding:14px 28px; border-bottom:1px solid var(--border); background:var(--bar); }
   .brand{ display:flex; align-items:center; gap:10px; flex:1 1 200px; }
@@ -84,7 +84,7 @@
   .pick .bar{ flex:1; height:5px; border-radius:5px; background:var(--bg); overflow:hidden; }
   .pick .bar i{ display:block; height:100%; width:0; background:linear-gradient(90deg, var(--gold-dim), var(--gold)); }
 
-  /* FILTRI: bordo verde acqua = filtro attivo (l'oro è riservato alla navigazione) */
+  /* FILTERS: teal border = active filter (gold is reserved for navigation) */
   .tb{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
   .search{ display:flex; align-items:center; gap:10px; height:40px; padding:0 14px; border:1px solid var(--border); border-radius:10px; background:var(--panel); color:var(--text-muted); flex:1 1 260px; min-width:200px; }
   .search:focus-within{ border-color:var(--gold-dim); }
@@ -108,7 +108,7 @@
   body:not(.view-settings) #settings-pane{ display:none; }
   body:not(.view-checklist) .sets{ display:none; }
 
-  /* SET (vista "Tutti i set": gruppi comprimibili) */
+  /* SETS ("Tutti i set" view: collapsible groups) */
   .set-group{ display:flex; flex-direction:column; gap:12px; margin-bottom:12px; }
   .set-head{ display:flex; align-items:center; justify-content:space-between; gap:10px; padding:12px 14px; cursor:pointer; background:var(--panel); border:1px solid var(--border); border-radius:var(--radius); }
   .set-head.pinned{ position:sticky; top:0; z-index:8; background:var(--bg); }
@@ -118,7 +118,7 @@
   .chevron{ transition: transform .2s ease; color: var(--text-muted); flex-shrink:0; }
   .chevron.collapsed{ transform: rotate(-90deg); }
 
-  /* GALLERIA */
+  /* GALLERY */
   .grid{ display:grid; grid-template-columns:repeat(auto-fill, minmax(176px, 1fr)); gap:16px; }
   .tile{ background:var(--panel); border:1px solid var(--border); border-radius:12px; padding:8px; display:flex; flex-direction:column; gap:10px; min-width:0; }
   .tile.complete{ border-color:var(--gold-dim); }
@@ -128,7 +128,8 @@
   .art .ac{ position:relative; font:12px var(--font-mono); color:var(--text-muted); background:rgba(9,21,34,.78); padding:2px 8px; border-radius:6px; }
   .art .wish-btn{ position:absolute; top:6px; right:6px; width:40px; height:40px; margin:0; border-radius:50%; background:rgba(9,21,34,.78); }
   .meta{ padding:0 4px 4px; display:flex; flex-direction:column; gap:8px; min-width:0; }
-  .name{ white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-size:14.5px; cursor:pointer; }
+  .name{ white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-size:14.5px; }
+  .name[data-detail]{ cursor:pointer; }
   .r2{ display:flex; align-items:center; gap:6px; }
   .r2 .squares{ margin-left:auto; gap:4px; }
   .r2 .square{ width:24px; height:24px; }
@@ -151,7 +152,7 @@
   .square svg{ width:14px; height:14px; opacity:0; }
   .square.filled svg{ opacity:1; }
 
-  /* DESIDERI */
+  /* WISHLIST */
   .wish-btn{
     flex-shrink:0; width: 28px; height: 28px; padding:0; border:none; background:transparent; color: var(--text-muted);
     display:flex; align-items:center; justify-content:center; align-self:center; margin: -4px -4px -4px 0;
@@ -160,7 +161,7 @@
   .wish-btn.active{ color: var(--gold); }
   .wish-btn.active svg{ fill: currentColor; }
 
-  /* STATISTICHE */
+  /* STATISTICS */
   .stats-list{ display:grid; grid-template-columns:repeat(auto-fit, minmax(min(100%, 420px), 1fr)); gap:16px; align-items:start; }
   .stats-wide{ grid-column:1 / -1; }
   .stats-section{ background: var(--panel); border: 1px solid var(--border); border-radius: 14px; padding: 18px 20px; min-width:0; }
@@ -207,7 +208,7 @@
   .empty-state{ text-align:center; padding: 40px 20px; color: var(--text-muted); }
   .empty-state p{ margin: 6px 0 0; font-size: 13.5px; }
 
-  /* IMPOSTAZIONI */
+  /* SETTINGS */
   .settings{ display:grid; grid-template-columns:repeat(auto-fit, minmax(min(100%, 440px), 1fr)); gap:16px; align-items:start; }
   .manage-section{ background: var(--panel); border: 1px solid var(--border); border-radius: 14px; padding: 18px 20px; min-width:0; }
   .manage-section h3{ margin:0 0 10px; font-size: 16px; font-family: var(--font-display); font-weight: normal; color: var(--gold); }
@@ -250,7 +251,7 @@
   .overlay.open{ display:flex; }
   .modal{ background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; width:100%; max-width: 400px; }
   .modal h3{ margin:0 0 12px; font-family: var(--font-display); font-size: 17px; font-weight: normal; }
-  /* DIALOG DETTAGLI CARTA */
+  /* CARD DETAIL DIALOG */
   .detail-modal{ max-height: calc(100vh - 32px); max-height: calc(100dvh - 32px); overflow-y:auto; }
   .detail-figure{
     position:relative; margin: 0 auto 10px; width: 210px; max-width: 70%; aspect-ratio: 600 / 838;
@@ -285,7 +286,7 @@
   }
   body:not(.view-checklist) .fab{ display:none; }
 
-  /* ACCESSO OBBLIGATORIO: finché non c'è un accesso valido si vede solo la schermata di login */
+  /* REQUIRED LOGIN: until a valid sign-in exists only the login screen is shown */
   #gate{ position:fixed; inset:0; z-index:100; display:none; align-items:center; justify-content:center; padding:16px; background:var(--bg); }
   body.gated #gate{ display:flex; }
   body.gated .shell, body.gated .fab{ display:none !important; }
@@ -300,7 +301,7 @@
   #gate-msg:empty{ display:none; }
   #gate-msg{ color:var(--danger); }
 
-  /* MAZZI */
+  /* DECKS */
   .deck-bar{ margin-bottom:16px; }
   .deck-grid{ display:grid; grid-template-columns:repeat(auto-fill, minmax(280px, 1fr)); gap:16px; }
   .deck-card{ display:grid; grid-template-columns:64px minmax(0, 1fr); grid-template-rows:auto auto auto; align-content:center; gap:6px 14px; align-items:center; width:100%; padding:12px; text-align:left; border-radius:var(--radius); border:1px solid var(--border); background:var(--panel); color:var(--text); }
@@ -320,7 +321,7 @@
   details.deck-done > summary{ cursor:pointer; margin:20px 0 10px; color:var(--text-muted); font-size:14px; }
   details.deck-done[open] > summary{ color:var(--gold); }
 
-  /* BARRA IN BASSO (telefono) */
+  /* BOTTOM BAR (phone) */
   .bnav{ display:none; }
 
   @media (max-width: 860px){
@@ -555,18 +556,18 @@ OP01-003 | Nami | OP-01 Romance Dawn | C"></textarea>
 <script src="logic.js"></script>
 <script>
 (function(){
-  var L = window.OPLogic; // logica pura (logic.js), provata dai test in tests/
+  var L = window.OPLogic; // pure logic (logic.js), covered by the tests in tests/
   var STORAGE_KEY = 'op-collection-cards';
   var META_KEY = 'op-collection-meta';
-  // Metadati di sincronizzazione, salvati a parte per lasciare invariato il formato delle carte:
-  // deleted: { CODICE: timestamp } sono le "lapidi" delle carte eliminate (senza, un'eliminazione
-  // verrebbe annullata dal merge con un altro dispositivo); history: { 'AAAA-MM-GG': {t, owned, target} }.
+  // Sync metadata, stored separately so the card format stays unchanged:
+  // deleted: { CODE: timestamp } are the tombstones of deleted cards (without them a deletion
+  // would be undone by merging with another device); history: { 'YYYY-MM-DD': {t, owned, target} }.
   var meta = { deleted: {}, history: {} };
   var state = { cards: [], filter: 'all', setFilter: '', rarityFilter: '', categoryFilter: '', search: '', collapsed: {}, view: 'checklist', wishSetFilter: '', wishRarityFilter: '' };
 
-  // Ordine cronologico reale dei set (codice carta), dal più recente al meno recente.
-  // Usato per ordinare automaticamente i gruppi in checklist: nessun dato salvato, si
-  // ricalcola sempre dal codice delle carte, quindi resta coerente su ogni dispositivo.
+  // Real chronological order of the sets (card code), newest first.
+  // Used to sort the checklist groups automatically: nothing is stored, it is
+  // always recomputed from the card codes, so it stays consistent on every device.
   var SET_RELEASE_ORDER = [
     'EB05','OP17','ST31','ST32','ST33','ST34','ST35','ST36','OP16','ST30','OP15','EB03','EB04',
     'OP14','ST29','OP13','PRB02','ST22','OP12','OP11','ST23','ST24','ST25','ST26','ST27','ST28',
@@ -599,7 +600,7 @@ OP01-003 | Nami | OP-01 Romance Dawn | C"></textarea>
   }
   var editingCode = null;
 
-  // La logica pura sta in logic.js: qui restano solo i collegamenti allo stato della pagina.
+  // The pure logic lives in logic.js: only the links to the page state remain here.
   var target = L.target, normalizeCode = L.normalizeCode;
 
   function findCard(code){
@@ -675,9 +676,9 @@ OP01-003 | Nami | OP-01 Romance Dawn | C"></textarea>
 
   var parseDeck = L.parseDeck;
 
-  // ---- MAZZI: dati, sincronizzazione e vista ----
-  // I mazzi si salvano a parte dalla collezione ({ list, deleted }) e hanno la stessa logica di merge:
-  // vince il mazzo con updatedAt maggiore, una lapide in "deleted" impedisce che un mazzo eliminato riappaia.
+  // ---- DECKS: data, sync and view ----
+  // Decks are stored apart from the collection ({ list, deleted }) and use the same merge logic:
+  // the deck with the greater updatedAt wins, a tombstone in "deleted" stops a deleted deck from coming back.
   var DECKS_KEY = 'op-collection-decks';
   var decks = { list: [], deleted: {} };
   var deckOpenId = null, deckDraft = null;
@@ -703,7 +704,7 @@ OP01-003 | Nami | OP-01 Romance Dawn | C"></textarea>
   }
   function deckName(d){ return d.name || d.leader || 'Mazzo'; }
 
-  // Per ogni carta del mazzo: copie richieste e possedute (vedi logic.js).
+  // For each card of the deck: copies needed and owned (see logic.js).
   function deckStatus(deck){ return L.deckStatus(state.cards, deck); }
 
   function deckImgHtml(code){
@@ -756,7 +757,7 @@ OP01-003 | Nami | OP-01 Romance Dawn | C"></textarea>
         + '<p>Importa un mazzo da onepiecetopdecks.com, OPTCGSim o oplaytcg.com per vedere cosa ti manca.</p></div>';
       return;
     }
-    // Prima i mazzi più vicini al completamento.
+    // Decks closest to completion first.
     var items = decks.list.map(function(d){ return { d: d, s: deckStatus(d) }; });
     items.sort(function(a, b){
       var ra = a.s.need ? a.s.have / a.s.need : 0, rb = b.s.need ? b.s.have / b.s.need : 0;
@@ -834,11 +835,11 @@ OP01-003 | Nami | OP-01 Romance Dawn | C"></textarea>
     renderHead();
   });
 
-  // ---- ACCOUNT GOOGLE (Firebase) ----
-  // Sync a tre passi (leggi, unisci, scrivi solo se cambia): il remoto è un documento Firestore per utente.
-  // Non si scrive mai senza aver prima letto, quindi un dispositivo con dati vecchi (o offline) non può
-  // sovrascrivere quelli aggiornati. window.fbInit viene chiamata dallo script module in fondo alla pagina
-  // quando l'SDK Firebase è caricato; se non carica (offline) l'app resta sul solo salvataggio locale.
+  // ---- GOOGLE ACCOUNT (Firebase) ----
+  // Three-step sync (read, merge, write only if changed): the remote is one Firestore document per user.
+  // It never writes without reading first, so a device with old (or offline) data cannot
+  // overwrite newer data. window.fbInit is called by the module script at the bottom of the page
+  // when the Firebase SDK has loaded; if it does not load (offline) the app keeps local saving only.
   var fb = null, fbUser = null, fbSyncing = false, fbSyncAgain = false, fbSyncTimer = null;
   var fbSyncPromise = null, fbLastSync = 0, fbLastOk = false;
 
@@ -852,16 +853,16 @@ OP01-003 | Nami | OP-01 Romance Dawn | C"></textarea>
       document.getElementById('av').hidden = !user;
       document.getElementById('av-big').textContent = initial;
       if(!user){ authRemember(false); showGate(gateNotice); return; }
-      // Un dispositivo già verificato in passato apre subito l'app; altrimenti si attende la prima sincronizzazione.
+      // A device already verified in the past opens the app at once; otherwise it waits for the first sync.
       if(authRemembered()) openApp(); else showGate('', true);
       fbSync();
     });
   };
 
-  // ---- ACCESSO OBBLIGATORIO ----
-  // L'app si vede solo con un accesso Google valido. Il controllo su chi può entrare lo fanno le regole di
-  // Firestore: un account non autorizzato riceve "permission-denied" alla prima sincronizzazione. Dopo una
-  // sincronizzazione riuscita il dispositivo ricorda l'accesso, così l'app si apre anche offline.
+  // ---- REQUIRED LOGIN ----
+  // The app is visible only with a valid Google sign-in. Who may enter is enforced by the Firestore
+  // rules: an unauthorized account gets "permission-denied" on the first sync. After a successful
+  // sync the device remembers the sign-in, so the app also opens offline.
   var AUTH_OK_KEY = 'op-auth-ok';
   var gateNotice = '';
   function authRemembered(){
@@ -876,7 +877,7 @@ OP01-003 | Nami | OP-01 Romance Dawn | C"></textarea>
     document.getElementById('gate-msg').textContent = msg || '';
   }
   function openApp(){ document.body.classList.remove('gated', 'auth-pending'); }
-  // Account non autorizzato: si esce e si torna alla schermata di accesso. I dati locali non si toccano.
+  // Unauthorized account: sign out and go back to the login screen. Local data is left untouched.
   function authDenied(){
     authRemember(false);
     gateNotice = 'Accesso non riuscito. Riprova con un altro account.';
@@ -896,10 +897,10 @@ OP01-003 | Nami | OP-01 Romance Dawn | C"></textarea>
       var merged = mergeSnapshots(localSnapshot(), remote);
       return { merged: merged, write: canonSnapshot(merged) !== canonSnapshot(remote) };
     }).then(function(merged){
-      // Il merge è avvenuto prima del commit: si riunisce con lo stato locale di adesso, così
-      // le modifiche fatte nel frattempo non vengono sovrascritte.
+      // The merge happened before the commit: merge again with the current local state, so
+      // changes made in the meantime are not overwritten.
       applySnapshot(mergeSnapshots(localSnapshot(), merged));
-      // I mazzi stanno in un documento a parte: una pagina vecchia, che non li conosce, non può sovrascriverli.
+      // Decks live in a separate document: an old page, which does not know them, cannot overwrite them.
       return fb.sync(fbUser.uid, function(raw){
         var remote = cleanDecks(raw), m = mergeDecks(decks, remote);
         return { merged: m, write: canonDecks(m) !== canonDecks(remote) };
@@ -967,20 +968,20 @@ OP01-003 | Nami | OP-01 Romance Dawn | C"></textarea>
     return { groups: groups, order: order };
   }
 
-  // ---- COLONNA SET E INTESTAZIONE ----
+  // ---- SET COLUMN AND HEADER ----
   function setCode(cards){
     var m = cards[0].code.match(/^([A-Z]+\d+)-/);
     return m ? m[1] : '';
   }
 
-  // "OP-01 Romance Dawn" con codice OP01 diventa "Romance Dawn": il codice si mostra a parte.
+  // "OP-01 Romance Dawn" with code OP01 becomes "Romance Dawn": the code is shown separately.
   function setLabel(name, code){
     if(!code) return name;
     var re = new RegExp('^' + code.replace(/^([A-Z]+)(\d+)$/, '$1[-\\s]?$2') + '[\\s:–-]*', 'i');
     return name.replace(re, '') || name;
   }
 
-  // Un elemento per set (stesso raggruppamento della checklist) con copie possedute e obiettivo.
+  // One item per set (same grouping as the checklist) with owned copies and target.
   function computeSets(){
     var by = {};
     state.cards.forEach(function(c){
@@ -1023,7 +1024,7 @@ OP01-003 | Nami | OP-01 Romance Dawn | C"></textarea>
     document.getElementById('sets-list').innerHTML = html;
   }
 
-  // Titolo della vista; in checklist anche progresso del set scelto (o totale) e selettore del telefono.
+  // View title; in the checklist also the progress of the chosen set (or overall) and the phone selector.
   function renderHead(){
     var title = '', count = '';
     if(state.view === 'checklist'){
@@ -1056,7 +1057,7 @@ OP01-003 | Nami | OP-01 Romance Dawn | C"></textarea>
     document.getElementById('dh-count').textContent = count;
   }
 
-  // Segna i filtri attivi (bordo verde acqua) e mostra "Reimposta" solo se serve.
+  // Marks the active filters (teal border) and shows "Reimposta" (reset) only when needed.
   function markFilters(){
     document.querySelectorAll('#state-seg button').forEach(function(b){
       b.classList.toggle('on', b.getAttribute('data-filter') === state.filter);
@@ -1114,8 +1115,8 @@ OP01-003 | Nami | OP-01 Romance Dawn | C"></textarea>
     document.querySelectorAll('.wish-count').forEach(function(el){ el.textContent = n || ''; });
   }
 
-  // Le opzioni dei filtri contengono solo set e rarità presenti nella lista dei desideri;
-  // se il valore selezionato non è più disponibile (carta rimossa) il filtro si azzera.
+  // The filter options only contain sets and rarities present in the wishlist;
+  // if the selected value is no longer available (card removed) the filter resets.
   function fillWishSelect(id, allLabel, values, current){
     var sel = document.getElementById(id);
     sel.innerHTML = '<option value="">' + allLabel + '</option>' + values.map(function(v){
@@ -1136,7 +1137,7 @@ OP01-003 | Nami | OP-01 Romance Dawn | C"></textarea>
     document.getElementById('wish-rarity-filter').classList.toggle('on', !!state.wishRarityFilter);
   }
 
-  // ---- STATISTICHE ----
+  // ---- STATISTICS ----
   var RARITY_ORDER = ['C','UC','R','SR','SEC','L','SP','P'];
   var CATEGORY_LABELS = [['regular','Set regolari'],['deck','Deck'],['memorial','Memorial'],['premium','Premium'],['promo','Promo'],['other','Altro']];
   var ALMOST_DONE_MAX = 5;
@@ -1148,8 +1149,8 @@ OP01-003 | Nami | OP-01 Romance Dawn | C"></textarea>
     if(o >= t) b.complete++;
   }
 
-  // Aggrega le carte per rarità, tipo di prodotto e set. "Copie" = somma di min(possedute, obiettivo),
-  // la stessa misura dell'header, quindi i totali tornano sempre con la percentuale globale.
+  // Aggregates the cards by rarity, product type and set. "Copies" = sum of min(owned, target),
+  // the same measure as the header, so the totals always match the overall percentage.
   function computeStats(cards){
     var total = statBucket(), leaders = statBucket();
     var byRarity = {}, byCategory = {}, bySet = {};
@@ -1192,8 +1193,8 @@ OP01-003 | Nami | OP-01 Romance Dawn | C"></textarea>
   function fmtPct(x){ return x.toFixed(1).replace('.', ','); }
   function fmtDay(key){ return key.slice(8, 10) + '/' + key.slice(5, 7); }
 
-  // Grafico a linee della percentuale di completamento per giorno, in SVG inline.
-  // L'asse verticale si adatta ai dati: su 0-100 le variazioni di pochi punti sarebbero invisibili.
+  // Line chart of the completion percentage per day, as inline SVG.
+  // The vertical axis adapts to the data: on 0-100 changes of a few points would be invisible.
   function historyChart(history){
     var days = Object.keys(history).sort().filter(function(d){ return history[d].target > 0; });
     if(days.length < 2){
@@ -1295,7 +1296,7 @@ OP01-003 | Nami | OP-01 Romance Dawn | C"></textarea>
     window.scrollTo(0, 0);
   }
 
-  // Dalle statistiche apre la checklist sul set scelto, senza altri filtri.
+  // From the statistics, opens the checklist on the chosen set, with no other filters.
   function goToSet(name){
     state.filter = 'all'; state.categoryFilter = ''; state.rarityFilter = ''; state.search = '';
     state.setFilter = name;
@@ -1322,8 +1323,8 @@ OP01-003 | Nami | OP-01 Romance Dawn | C"></textarea>
       container.innerHTML = '<div class="empty-state"><p>Nessuna carta dei desideri corrisponde alla ricerca.</p></div>';
       return;
     }
-    // Come la checklist: un gruppo per set (più recente prima), con galleria quando è aperto.
-    // Dentro il set le carte da comprare vengono prima, le complete in fondo.
+    // Like the checklist: one group per set (newest first), with a gallery when open.
+    // Inside a set the cards still to get come first, the complete ones last.
     var groups = {};
     items.forEach(function(c){ (groups[c.set] || (groups[c.set] = [])).push(c); });
     var order = Object.keys(groups);
@@ -1350,7 +1351,7 @@ OP01-003 | Nami | OP-01 Romance Dawn | C"></textarea>
     container.innerHTML = html;
   }
 
-  // Intestazione comprimibile di un set; key distingue lo stato aperto/chiuso di checklist e desideri.
+  // Collapsible set header; key tells apart the open/closed state of checklist and wishlist.
   function setHeadHtml(name, key, collapsed, countText){
     return '<div class="set-head' + (collapsed ? '' : ' pinned') + '" data-ckey="' + escapeHtml(key) + '">'
       + '<div class="set-head-left"><svg class="chevron' + (collapsed ? ' collapsed' : '') + '" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>'
@@ -1363,7 +1364,7 @@ OP01-003 | Nami | OP-01 Romance Dawn | C"></textarea>
     return e && e.variants && e.variants[0] ? tcgImg(e.variants[0][0], 200) : '';
   }
 
-  // Tessera della galleria: copertina (da catalogo, se disponibile), nome, rarità e caselle delle copie.
+  // Gallery tile: cover (from the catalog, if available), name, rarity and copy boxes.
   function tileHtml(c){
     var t = target(c), code = escapeHtml(c.code), img = imgFor(c.code);
     var h = '<div class="tile' + (c.owned >= t ? ' complete' : '') + '" data-code="' + code + '">';
@@ -1400,7 +1401,7 @@ OP01-003 | Nami | OP-01 Romance Dawn | C"></textarea>
       container.innerHTML = '<div class="empty-state"><p>Nessuna carta corrisponde ai filtri.</p></div>';
       return;
     }
-    // Con un set scelto la galleria è sempre aperta; in "Tutti i set" i gruppi si comprimono.
+    // With a set chosen the gallery is always open; in "Tutti i set" the groups collapse.
     var single = !!state.setFilter;
     var html = '';
     data.order.forEach(function(setName){
@@ -1481,7 +1482,7 @@ OP01-003 | Nami | OP-01 Romance Dawn | C"></textarea>
   document.getElementById('sets-close').addEventListener('click', closeSheet);
   document.getElementById('sets-back').addEventListener('click', closeSheet);
 
-  // Una copertina che non carica (offline, id sbagliato) lascia visibile il segnaposto.
+  // A cover that fails to load (offline, wrong id) leaves the placeholder visible.
   document.getElementById('list-container').addEventListener('error', function(e){
     if(e.target.tagName === 'IMG') e.target.classList.add('broken');
   }, true);
@@ -1528,7 +1529,7 @@ OP01-003 | Nami | OP-01 Romance Dawn | C"></textarea>
       if(card){
         L.toggleOwned(card, idx, Date.now());
         scheduleSave();
-        // Aggiornamento sul posto: rifare tutta la galleria ricaricherebbe le copertine.
+        // In-place update: redrawing the whole gallery would reload the covers.
         var tile = square.closest('.tile');
         if(tile){
           tile.classList.toggle('complete', card.owned >= target(card));
@@ -1626,7 +1627,7 @@ OP01-003 | Nami | OP-01 Romance Dawn | C"></textarea>
 
   document.getElementById('gate-login').addEventListener('click', function(){
     gateNotice = '';
-    if(fbUser){ showGate('', true); fbSync(); return; } // già loggato ma non verificato: riprova la sincronizzazione
+    if(fbUser){ showGate('', true); fbSync(); return; } // already signed in but not verified: retry the sync
     if(!fb){ showGate('Login non disponibile: controlla la connessione e ricarica la pagina.'); return; }
     showGate('');
     fb.login().catch(function(err){
@@ -1638,19 +1639,19 @@ OP01-003 | Nami | OP-01 Romance Dawn | C"></textarea>
 
   document.getElementById('fb-logout').addEventListener('click', function(){
     if(!confirm('Uscendo, i dati vengono rimossi da questo dispositivo (restano nel tuo account). Continuare?')) return;
-    // Prima un'ultima sync: se fallisce non si cancella nulla.
+    // One last sync first: if it fails nothing is deleted.
     fbSync().then(function(){
       if(!fbLastOk){ showMsg('fb-msg', 'Impossibile sincronizzare: uscita annullata per non perdere dati.', false); return; }
       return fb.logout().then(function(){ applySnapshot({ cards: [], deleted: {}, history: {} }); applyDecks(null); });
     });
   });
 
-  // ---- DIALOG DETTAGLI ----
-  // card-catalog.json (generato da scripts/build-catalog.mjs) elenca per codice le versioni (base,
-  // parallel, ...) con l'id prodotto TCGplayer da cui si ricavano le immagini, più i dati strutturati.
-  // Si carica solo alla prima apertura del dialog; se manca (file non caricato, offline) il dialog
-  // mostra comunque i dati della carta, senza immagine né dati extra. Le immagini del sito ufficiale
-  // non sono usabili: invia Cross-Origin-Resource-Policy: same-site e il browser le blocca.
+  // ---- DETAIL DIALOG ----
+  // card-catalog.json (generated by scripts/build-catalog.mjs) lists the versions (base,
+  // parallel, ...) per code, with the TCGplayer product id the images come from, plus the structured data.
+  // It loads only on the first opening of the dialog; if it is missing (file not loaded, offline) the dialog
+  // still shows the card data, without image or extra data. The official site's images
+  // cannot be used: it sends Cross-Origin-Resource-Policy: same-site and the browser blocks them.
   var CATALOG_URL = 'card-catalog.json';
   var TCG_IMG = 'https://tcgplayer-cdn.tcgplayer.com/product/';
   var COLOR_IT = { Red: 'Rosso', Green: 'Verde', Blue: 'Blu', Purple: 'Viola', Black: 'Nero', Yellow: 'Giallo' };
@@ -1669,7 +1670,7 @@ OP01-003 | Nami | OP-01 Romance Dawn | C"></textarea>
         catalogDate = (data && data.generatedAt) || '';
         return catalog;
       }).catch(function(){
-        catalogPromise = null; // riprova alla prossima apertura
+        catalogPromise = null; // retry on the next opening
         return {};
       });
     }
@@ -1683,7 +1684,7 @@ OP01-003 | Nami | OP-01 Romance Dawn | C"></textarea>
     document.getElementById('detail-img-msg').textContent = text;
   }
 
-  // Prova gli URL in ordine finché uno carica; se falliscono tutti mostra un messaggio.
+  // Tries the URLs in order until one loads; if all fail it shows a message.
   function setDetailImage(urls){
     var img = document.getElementById('detail-img');
     var msg = document.getElementById('detail-img-msg');
@@ -1782,7 +1783,7 @@ OP01-003 | Nami | OP-01 Romance Dawn | C"></textarea>
     document.getElementById('detail-overlay').classList.add('open');
     document.getElementById('detail-close').focus();
     loadCatalog().then(function(cat){
-      if(detailCode !== card.code) return; // chiuso o cambiato nel frattempo
+      if(detailCode !== card.code) return; // closed or changed in the meantime
       var entry = cat[card.code] || null;
       renderDetailGrid(card, entry);
       renderDetailVariants(card, entry);
@@ -1796,7 +1797,7 @@ OP01-003 | Nami | OP-01 Romance Dawn | C"></textarea>
     document.getElementById('detail-overlay').classList.remove('open');
     var img = document.getElementById('detail-img');
     img.onload = img.onerror = null;
-    img.removeAttribute('src'); // interrompe un eventuale caricamento in corso
+    img.removeAttribute('src'); // stops any load in progress
     document.getElementById('detail-variants').innerHTML = '';
   }
 
@@ -1873,12 +1874,12 @@ OP01-003 | Nami | OP-01 Romance Dawn | C"></textarea>
   });
 
   if(authRemembered()) openApp();
-  // Se l'SDK Firebase non carica (offline) e il dispositivo non è mai stato verificato, resta l'accesso con un avviso.
+  // If the Firebase SDK does not load (offline) and the device was never verified, the login stays with a notice.
   setTimeout(function(){
     if(!fb && !authRemembered()) showGate('Impossibile verificare l\'accesso: controlla la connessione e ricarica la pagina.');
   }, 8000);
   loadData();
-  // Il catalogo serve alle copertine della galleria: si carica subito e si ridisegna quando arriva.
+  // The catalog feeds the gallery covers: it loads at once and the gallery is redrawn when it arrives.
   loadCatalog().then(function(cat){
     var n = Object.keys(cat || {}).length;
     var d = catalogDate ? new Date(catalogDate + 'T00:00:00') : null;
@@ -1887,18 +1888,18 @@ OP01-003 | Nami | OP-01 Romance Dawn | C"></textarea>
       : 'non disponibile';
     if(state.view === 'checklist' || state.view === 'decks') renderList();
   });
-  // Pulizia della vecchia sync Gist: il token non serve più e non va lasciato in chiaro nel browser.
+  // Cleanup of the old Gist sync: the token is no longer needed and must not stay in clear text in the browser.
   localStorage.removeItem('op-gh-token');
   localStorage.removeItem('op-gh-gistid');
-  // Tornando all'app (tipico su mobile) si riallinea con l'account, al massimo ogni 30 secondi.
+  // On coming back to the app (typical on mobile) it re-syncs with the account, at most every 30 seconds.
   document.addEventListener('visibilitychange', function(){
     if(document.visibilityState === 'visible' && Date.now() - fbLastSync > SYNC_MIN_INTERVAL) fbSync();
   });
 })();
 </script>
 <script type="module">
-  // La config Firebase non è un segreto: l'accesso ai dati è protetto dalle regole Firestore
-  // (ognuno legge e scrive solo users/<proprio uid>/...).
+  // The Firebase config is not a secret: access to the data is protected by the Firestore rules
+  // (everyone reads and writes only users/<own uid>/...).
   import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js';
   import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js';
   import { getFirestore, doc, runTransaction } from 'https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js';
@@ -1918,9 +1919,9 @@ OP01-003 | Nami | OP-01 Romance Dawn | C"></textarea>
     login: () => signInWithPopup(auth, new GoogleAuthProvider()),
     logout: () => signOut(auth),
     onUser: cb => onAuthStateChanged(auth, cb),
-    // Un solo documento per utente con l'intero snapshot come stringa JSON (evita i valori undefined
-    // che Firestore rifiuta). ponytail: limite 1 MiB per documento (~6000 carte), poi un documento per set.
-    // mergeFn(remote) -> { merged, write }: la transazione rilegge e riprova se il documento cambia nel frattempo.
+    // One document per user with the whole snapshot as a JSON string (avoids the undefined values
+    // that Firestore rejects). ponytail: 1 MiB limit per document (~6000 cards), then one document per set.
+    // mergeFn(remote) -> { merged, write }: the transaction re-reads and retries if the document changes meanwhile.
     sync: (uid, mergeFn, name = 'collection') => runTransaction(db, async tx => {
       const ref = doc(db, 'users', uid, 'data', name);
       const snap = await tx.get(ref);

@@ -1,10 +1,10 @@
-// Logica pura dell'app (nessun accesso a pagina, localStorage o Firestore).
-// Caricata da index.html con un <script> classico (espone window.OPLogic) e dai test con require().
-// Le funzioni ricevono i dati e l'ora ("now") come parametri, così si provano in memoria in modo ripetibile.
+// Pure app logic (no access to the page, localStorage or Firestore).
+// Loaded by index.html with a classic <script> (exposes window.OPLogic) and by the tests with require().
+// Functions take the data and the time ("now") as parameters, so they can be tested in memory, repeatably.
 (function(root){
   var HISTORY_MAX_DAYS = 400;
 
-  // ---- CARTE ----
+  // ---- CARDS ----
   function target(card){ return card.leader ? 1 : 4; }
 
   function normalizeCode(c){ return (c||'').trim().toUpperCase(); }
@@ -21,11 +21,11 @@
     return null;
   }
 
-  // Ogni modifica a una carta ne aggiorna il timestamp: è ciò che permette al merge di
-  // scegliere la versione più recente quando due dispositivi hanno dati diversi.
+  // Every change to a card updates its timestamp: it is what lets the merge
+  // pick the most recent version when two devices hold different data.
   function touch(card, now){ card.updatedAt = now; }
 
-  // Aggiunge o aggiorna una carta dentro "cards" (l'array viene modificato).
+  // Adds or updates a card inside "cards" (the array is modified).
   function upsertCard(cards, data, now){
     var nc = normalizeCode(data.code);
     if(!nc) return { ok:false, error: 'Codice mancante' };
@@ -38,8 +38,8 @@
       existing.rarity = (data.rarity||'').trim().toUpperCase();
       existing.leader = !!data.leader;
       clampOwned(existing);
-      // Un reimport di dati invariati non deve "rinfrescare" la carta, altrimenti
-      // batterebbe le copie segnate nel frattempo su un altro dispositivo.
+      // Re-importing unchanged data must not "refresh" the card, otherwise it
+      // would beat the copies marked in the meantime on another device.
       var after = existing.name + '|' + existing.set + '|' + existing.rarity + '|' + existing.leader + '|' + existing.owned;
       if(after !== before) touch(existing, now);
       return { ok:true, updated:true };
@@ -51,32 +51,32 @@
     }
   }
 
-  // Restituisce le carte senza quella eliminata e scrive la lapide in "deleted" (l'oggetto viene modificato).
+  // Returns the cards without the deleted one and writes the tombstone into "deleted" (that object is modified).
   function deleteCard(cards, deleted, code, now){
     var nc = normalizeCode(code);
     deleted[nc] = now;
     return cards.filter(function(c){ return c.code !== nc; });
   }
 
-  // "Svuota collezione": una lapide per ogni carta presente (l'oggetto "deleted" viene modificato).
+  // "Clear collection": one tombstone for every card present (the "deleted" object is modified).
   function tombstoneAll(cards, deleted, now){
     cards.forEach(function(c){ deleted[c.code] = now; });
   }
 
-  // Tocco su un quadratino: se è già l'ultimo pieno si scende di uno, altrimenti si sale fino a quel quadratino.
+  // Tap on a square: if it is already the last filled one, go down by one, otherwise fill up to that square.
   function toggleOwned(card, idx, now){
     card.owned = (card.owned === idx + 1) ? idx : idx + 1;
     clampOwned(card);
     touch(card, now);
   }
 
-  // La stellina dei desideri: la chiave "wishlist" c'è solo quando è attiva (mai "false").
+  // The wishlist star: the "wishlist" key exists only when active (never "false").
   function toggleWish(card, now){
     if(card.wishlist) delete card.wishlist; else card.wishlist = true;
     touch(card, now);
   }
 
-  // ---- METADATI E STORICO ----
+  // ---- METADATA AND HISTORY ----
   function cleanMeta(m){
     m = m && typeof m === 'object' ? m : {};
     return {
@@ -85,7 +85,7 @@
     };
   }
 
-  // Istantanea { cards, deleted, history } da un documento remoto: scarta le carte senza codice.
+  // Snapshot { cards, deleted, history } from a remote document: drops cards without a code.
   function cleanSnapshot(raw){
     return {
       cards: (Array.isArray(raw.cards) ? raw.cards : []).filter(function(c){ return c && typeof c.code === 'string'; }),
@@ -98,8 +98,8 @@
     return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
   }
 
-  // Una voce al giorno (l'ultima): serve al grafico "Andamento" della vista Statistiche.
-  // "history" viene modificato.
+  // One entry per day (the last one): feeds the "Andamento" (trend) chart of the Statistics view.
+  // "history" is modified.
   function recordSnapshot(cards, history, now){
     if(cards.length === 0) return;
     var owned = 0, tgt = 0;
@@ -112,10 +112,10 @@
     while(keys.length > HISTORY_MAX_DAYS) delete history[keys.shift()];
   }
 
-  // Unisce due istantanee { cards, deleted, history } (locale e remota) senza perdere modifiche.
-  // Per ogni codice vince la carta con updatedAt maggiore (a parità vince quella remota, come
-  // prima della sincronizzazione a merge); una carta sopravvive solo se è più recente della
-  // sua eventuale lapide. Le carte senza updatedAt (dati vecchi) valgono 0.
+  // Merges two snapshots { cards, deleted, history } (local and remote) without losing changes.
+  // For each code the card with the greater updatedAt wins (on a tie the remote one wins, as
+  // before the merge-based sync); a card survives only if it is newer than its
+  // tombstone, if any. Cards without updatedAt (old data) count as 0.
   function mergeSnapshots(local, remote){
     var deleted = {};
     [remote.deleted, local.deleted].forEach(function(d){
@@ -147,7 +147,7 @@
     return { cards: cards, deleted: deleted, history: history };
   }
 
-  // Forma canonica per confrontare due istantanee indipendentemente dall'ordine.
+  // Canonical form to compare two snapshots regardless of order.
   function canonSnapshot(s){
     var cards = s.cards.slice().sort(function(a,b){ return a.code < b.code ? -1 : a.code > b.code ? 1 : 0; });
     function sortedObj(o){
@@ -158,13 +158,13 @@
     return JSON.stringify({ cards: cards, deleted: sortedObj(s.deleted), history: sortedObj(s.history) });
   }
 
-  // ---- MAZZI: lettura dei formati ----
+  // ---- DECKS: format reading ----
   var DECK_CODE = /^[A-Z]{1,4}\d{0,2}-\d{3}$/;
   var DECK_ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_';
   var DECK_FAMILIES = ['OP', 'ST', 'EB', 'PRB', 'P'];
 
-  // Codice di condivisione di oplaytcg.com, versione "2": 6 bit per carattere, ultimo carattere = controllo.
-  // Formato ricavato osservando il sito e provato su mazzi reali; non è un'API ufficiale e può cambiare.
+  // Share code from oplaytcg.com, version "2": 6 bits per character, last character = checksum.
+  // Format worked out by observing the site and tested on real decks; it is not an official API and may change.
   function decodeOplayDeck(code){
     if(code.charAt(0) !== '2' || code.length < 3) return null;
     var body = code.slice(1, -1), sum = 7, bits = [], i, b;
@@ -182,14 +182,14 @@
       for(var k = 0; k < n; k++) x = x * 2 + bits[pos++];
       return x;
     }
-    // Una carta: [stesso set della precedente?] famiglia, set, numero [, copie].
+    // One card: [same set as the previous one?] family, set, number [, copies].
     function readCard(withQty, prev){
       var prefix, set, j;
       if(withQty && read(1)){
         prefix = prev.prefix; set = prev.set;
       } else {
         var f = read(4);
-        if(f === 15){ // codice scritto per esteso
+        if(f === 15){ // code written in full
           var len = read(5) + 1, text = '';
           for(j = 0; j < len; j++) text += String.fromCharCode(read(7));
           return { code: text, qty: withQty ? read(7) : 1, part: null };
@@ -225,8 +225,8 @@
     }
   }
 
-  // Legge un mazzo incollato: elenco JSON di onepiecetopdecks, righe NxCODICE (OPTCGSim) o codice/link di oplaytcg.
-  // Restituisce { leader, cards: [[codice, copie], ...] } (il Leader è la prima carta) oppure { error }.
+  // Reads a pasted deck: onepiecetopdecks JSON list, NxCODE lines (OPTCGSim) or an oplaytcg code/link.
+  // Returns { leader, cards: [[code, copies], ...] } (the Leader is the first card) or { error }.
   function parseDeck(text){
     text = String(text || '').trim();
     if(!text) return { error: 'Incolla un mazzo.' };
@@ -235,7 +235,7 @@
       var arr = null;
       try{ arr = JSON.parse(text); }catch(e){}
       if(!Array.isArray(arr)) return { error: 'Elenco JSON non valido.' };
-      // La prima voce è un'intestazione di testo ("Exported from ..."): non è un codice, quindi si scarta.
+      // The first entry is a text header ("Exported from ..."): not a code, so it is dropped.
       arr.forEach(function(x){
         var c = String(x).trim().toUpperCase();
         if(DECK_CODE.test(c)) entries.push([c, 1]);
@@ -262,9 +262,9 @@
     return { leader: cards[0][1] === 1 ? cards[0][0] : null, cards: cards };
   }
 
-  // ---- MAZZI: dati e sincronizzazione ----
-  // I mazzi si salvano a parte dalla collezione ({ list, deleted }) e hanno la stessa logica di merge:
-  // vince il mazzo con updatedAt maggiore, una lapide in "deleted" impedisce che un mazzo eliminato riappaia.
+  // ---- DECKS: data and sync ----
+  // Decks are stored apart from the collection ({ list, deleted }) and use the same merge logic:
+  // the deck with the greater updatedAt wins, a tombstone in "deleted" stops a deleted deck from coming back.
   function cleanDecks(raw){
     raw = raw && typeof raw === 'object' ? raw : {};
     var list = (Array.isArray(raw.list) ? raw.list : []).filter(function(d){
@@ -305,8 +305,8 @@
     return JSON.stringify({ list: list, deleted: deleted });
   }
 
-  // Per ogni carta del mazzo: copie richieste, copie possedute. Ogni mazzo è valutato da solo (le copie
-  // non si "prenotano" tra mazzi diversi). noSet: la carta non c'è e nemmeno il suo set è nella collezione.
+  // For each card of the deck: copies needed and copies owned. Each deck is evaluated on its own (copies
+  // are not "reserved" across different decks). noSet: the card is missing and its set is not in the collection either.
   function deckStatus(cards, deck){
     var sets = {};
     cards.forEach(function(c){ var m = c.code.match(/^(.*)-/); if(m) sets[m[1]] = true; });
@@ -321,7 +321,7 @@
     return res;
   }
 
-  // ---- IMPORT IN BLOCCO ----
+  // ---- BULK IMPORT ----
   function parseBulk(text){
     text = text.trim();
     if(!text) return { cards: [], error: 'Incolla almeno una riga.' };

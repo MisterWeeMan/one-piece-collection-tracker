@@ -1,5 +1,5 @@
-// Merge del sync (collezione e mazzi), lapidi, forma canonica e pulizia dei dati remoti.
-// Solo oggetti in memoria e carte inventate (ZZ01-...): nessun localStorage, Firestore o dato reale.
+// Sync merge (collection and decks), tombstones, canonical form and cleaning of remote data.
+// In-memory objects and made-up cards only (ZZ01-...): no localStorage, Firestore or real data.
 var test = require('node:test');
 var assert = require('node:assert/strict');
 var L = require('../logic.js');
@@ -107,12 +107,12 @@ test('merge: l\'ordine dei due lati non conta (senza parità)', function(){
 });
 
 test('merge: scenario a due dispositivi, rinomina del codice', function(){
-  // Il dispositivo A rinomina ZZ01-001 in ZZ01-010: nuova carta + lapide della vecchia.
+  // Device A renames ZZ01-001 to ZZ01-010: new card + tombstone of the old one.
   var cards = [card('ZZ01-001', 10, { owned: 2 })], deleted = {};
   L.upsertCard(cards, { code: 'ZZ01-010', name: 'Carta ZZ01-001', set: 'Set Finto' }, 100);
   cards = L.deleteCard(cards, deleted, 'ZZ01-001', 100);
   var a = snap(cards, deleted);
-  // Il dispositivo B ha ancora la vecchia (aggiornata prima della rinomina).
+  // Device B still has the old one (updated before the rename).
   var b = snap([card('ZZ01-001', 10, { owned: 2 })]);
   assert.deepEqual(codes(L.mergeSnapshots(a, b)), ['ZZ01-010']);
   assert.deepEqual(codes(L.mergeSnapshots(b, a)), ['ZZ01-010']);
@@ -125,7 +125,7 @@ test('merge: scenario elimina su A, modifica successiva su B = la modifica vince
 });
 
 test('merge: vince la carta intera, i campi di versioni diverse non si mescolano', function(){
-  // Limite noto: owned segnato su un dispositivo e wishlist su un altro, una delle due modifiche si perde.
+  // Known limit: owned marked on one device and wishlist on another, one of the two changes is lost.
   var a = card('ZZ01-001', 20, { owned: 3 }), b = card('ZZ01-001', 10, { wishlist: true });
   var c = byCode(L.mergeSnapshots(snap([a]), snap([b])), 'ZZ01-001');
   assert.equal(c.owned, 3);
@@ -152,7 +152,7 @@ test('cleanMeta e cleanSnapshot: dati malformati danno valori vuoti', function()
   assert.deepEqual(L.cleanSnapshot({ cards: 'no' }).cards, []);
 });
 
-// ---- mazzi ----
+// ---- decks ----
 function deck(id, updatedAt, extra){
   var d = { id: id, name: 'Mazzo ' + id, leader: 'ZZ01-001', cards: [['ZZ01-001', 1], ['ZZ01-002', 4]], createdAt: 1 };
   if(updatedAt !== undefined) d.updatedAt = updatedAt;

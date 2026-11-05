@@ -1,5 +1,5 @@
-// Modifiche alle carte (aggiunta, import, eliminazione, quadratini, desideri), storico e import in blocco.
-// Solo oggetti in memoria e carte inventate (ZZ01-...): nessun localStorage, Firestore o dato reale.
+// Changes to cards (add, import, delete, squares, wishlist), history and bulk import.
+// In-memory objects and made-up cards only (ZZ01-...): no localStorage, Firestore or real data.
 var test = require('node:test');
 var assert = require('node:assert/strict');
 var L = require('../logic.js');
@@ -16,7 +16,7 @@ test('upsertCard: carta nuova, formato salvato invariato', function(){
   var cards = [];
   var res = L.upsertCard(cards, { code: ' zz01-001 ', name: ' Prova ', set: '', rarity: ' sr ', leader: 1 }, 1000);
   assert.deepEqual(res, { ok: true, updated: false });
-  // Le chiavi esatte di una carta salvata (op-collection-cards): non devono cambiare senza una migrazione.
+  // The exact keys of a saved card (op-collection-cards): they must not change without a migration.
   assert.deepEqual(cards, [{ code: 'ZZ01-001', name: 'Prova', set: 'Senza set', rarity: 'SR', leader: true, owned: 0, updatedAt: 1000 }]);
 });
 
@@ -58,7 +58,7 @@ test('deleteCard: toglie la carta e scrive la lapide con il codice normalizzato'
   assert.deepEqual(rest, [{ code: 'ZZ01-002' }]);
   assert.deepEqual(deleted, { 'ZZ01-001': 500 });
   assert.equal(cards.length, 2, 'l\'array di partenza non cambia');
-  L.deleteCard(rest, deleted, 'ZZ09-999', 600); // codice assente: la lapide si scrive comunque
+  L.deleteCard(rest, deleted, 'ZZ09-999', 600); // absent code: the tombstone is written anyway
   assert.equal(deleted['ZZ09-999'], 600);
 });
 
@@ -80,7 +80,7 @@ test('toggleOwned: secondo tocco sull\'ultimo quadratino torna indietro, limiti 
   L.toggleOwned(c, 0, 13);
   assert.equal(c.owned, 0);
   var l = { code: 'ZZ01-002', leader: true, owned: 0 };
-  L.toggleOwned(l, 3, 14); // un quadratino oltre l'obiettivo di un Leader
+  L.toggleOwned(l, 3, 14); // one square beyond a Leader's target
   assert.equal(l.owned, 1);
 });
 
@@ -94,8 +94,8 @@ test('toggleWish: la chiave wishlist c\'è solo se attiva, mai false', function(
   assert.equal(c.updatedAt, 6);
 });
 
-// ---- storico ----
-var DAY = new Date(2026, 0, 5, 12, 0, 0).getTime(); // 5 gennaio 2026, ora locale
+// ---- history ----
+var DAY = new Date(2026, 0, 5, 12, 0, 0).getTime(); // 5 January 2026, local time
 
 test('recordSnapshot: nessuna carta, nessuna voce', function(){
   var h = {};
@@ -129,7 +129,7 @@ test('recordSnapshot: oltre 400 giorni toglie i più vecchi', function(){
   assert.ok('2026-01-05' in h);
 });
 
-// ---- import in blocco ----
+// ---- bulk import ----
 test('parseBulk: righe codice | nome | set | rarità | L', function(){
   var r = L.parseBulk('ZZ01-001 | Uno | Set Finto | SR | L\r\nZZ01-002|Due|Set Finto\n\n  ZZ01-003 | Tre | | | leader\nZZ01-004 | Quattro | S | L');
   assert.equal(r.error, undefined);
