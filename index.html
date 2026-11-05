@@ -285,6 +285,21 @@
   }
   body:not(.view-checklist) .fab{ display:none; }
 
+  /* ACCESSO OBBLIGATORIO: finché non c'è un accesso valido si vede solo la schermata di login */
+  #gate{ position:fixed; inset:0; z-index:100; display:none; align-items:center; justify-content:center; padding:16px; background:var(--bg); }
+  body.gated #gate{ display:flex; }
+  body.gated .shell, body.gated .fab{ display:none !important; }
+  .gate-card{ width:100%; max-width:360px; text-align:center; display:flex; flex-direction:column; align-items:center; gap:14px; }
+  .gate-card .logo{ width:48px; height:48px; font-size:18px; border-radius:13px; }
+  .gate-card h1{ margin:0; font:400 26px var(--font-display); }
+  .gate-card p{ margin:0; color:var(--text-muted); font-size:14px; line-height:1.5; }
+  #gate-out{ display:flex; flex-direction:column; align-items:center; gap:14px; }
+  #gate-pending{ display:none; }
+  body.auth-pending #gate-pending{ display:block; }
+  body.auth-pending #gate-out{ display:none; }
+  #gate-msg:empty{ display:none; }
+  #gate-msg{ color:var(--danger); }
+
   /* MAZZI */
   .deck-bar{ margin-bottom:16px; }
   .deck-grid{ display:grid; grid-template-columns:repeat(auto-fill, minmax(280px, 1fr)); gap:16px; }
@@ -344,7 +359,19 @@
   }
 </style>
 </head>
-<body class="view-checklist">
+<body class="view-checklist gated auth-pending">
+<div id="gate" role="dialog" aria-modal="true" aria-label="Accesso">
+  <div class="gate-card">
+    <span class="logo">OP</span>
+    <h1>Collezione</h1>
+    <p id="gate-pending">Verifica dell'accesso…</p>
+    <div id="gate-out">
+      <p>Accedi con il tuo account Google per usare l'app.</p>
+      <button class="btn btn-gold" id="gate-login">Accedi con Google</button>
+      <p id="gate-msg" role="alert"></p>
+    </div>
+  </div>
+</div>
 <div class="shell">
 
   <header class="top">
@@ -406,11 +433,7 @@
 
         <div class="manage-section">
           <h3>Account Google</h3>
-          <div id="fb-out">
-            <p class="hint" style="margin-top:0;">Accedi con il tuo account Google: la collezione viene salvata nel tuo account e la ritrovi su qualsiasi dispositivo. Ogni account vede solo i propri dati.</p>
-            <div class="btn-row" style="margin-top:12px;"><button class="btn btn-gold" id="fb-login">Accedi con Google</button></div>
-          </div>
-          <div id="fb-in" style="display:none;">
+          <div id="fb-in">
             <div class="who"><span class="av" id="av-big"></span><div><b>Connesso con Google</b><small id="fb-email"></small></div></div>
             <div class="btn-row">
               <button class="btn" id="fb-sync-now">Sincronizza ora</button>
@@ -1082,16 +1105,43 @@ OP01-003 | Nami | OP-01 Romance Dawn | C"></textarea>
     fb = api;
     api.onUser(function(user){
       fbUser = user;
-      document.getElementById('fb-out').style.display = user ? 'none' : 'block';
-      document.getElementById('fb-in').style.display = user ? 'block' : 'none';
       document.getElementById('fb-email').textContent = user ? (user.email || user.displayName || '') : '';
       var initial = user ? String(user.displayName || user.email || '?').charAt(0).toUpperCase() : '';
       document.getElementById('av').textContent = initial;
       document.getElementById('av').hidden = !user;
       document.getElementById('av-big').textContent = initial;
-      if(user) fbSync();
+      if(!user){ authRemember(false); showGate(gateNotice); return; }
+      // Un dispositivo già verificato in passato apre subito l'app; altrimenti si attende la prima sincronizzazione.
+      if(authRemembered()) openApp(); else showGate('', true);
+      fbSync();
     });
   };
+
+  // ---- ACCESSO OBBLIGATORIO ----
+  // L'app si vede solo con un accesso Google valido. Il controllo su chi può entrare lo fanno le regole di
+  // Firestore: un account non autorizzato riceve "permission-denied" alla prima sincronizzazione. Dopo una
+  // sincronizzazione riuscita il dispositivo ricorda l'accesso, così l'app si apre anche offline.
+  var AUTH_OK_KEY = 'op-auth-ok';
+  var gateNotice = '';
+  function authRemembered(){
+    try{ return localStorage.getItem(AUTH_OK_KEY) === '1'; }catch(e){ return false; }
+  }
+  function authRemember(on){
+    try{ if(on) localStorage.setItem(AUTH_OK_KEY, '1'); else localStorage.removeItem(AUTH_OK_KEY); }catch(e){}
+  }
+  function showGate(msg, pending){
+    document.body.classList.add('gated');
+    document.body.classList.toggle('auth-pending', !!pending);
+    document.getElementById('gate-msg').textContent = msg || '';
+  }
+  function openApp(){ document.body.classList.remove('gated', 'auth-pending'); }
+  // Account non autorizzato: si esce e si torna alla schermata di accesso. I dati locali non si toccano.
+  function authDenied(){
+    authRemember(false);
+    gateNotice = 'Questo account Google non è autorizzato. Accedi con l\'account giusto.';
+    showGate(gateNotice);
+    if(fb) fb.logout();
+  }
 
   function fbSetStatus(text){ document.getElementById('fb-status').textContent = text; }
 
@@ -1119,9 +1169,13 @@ OP01-003 | Nami | OP-01 Romance Dawn | C"></textarea>
     }).then(function(mergedDecks){
       applyDecks(mergeDecks(decks, cleanDecks(mergedDecks)));
       fbLastSync = Date.now(); fbLastOk = true;
+      authRemember(true);
+      openApp();
       fbSetStatus('Sincronizzato alle ' + timeLabel());
     }, function(err){
       fbLastOk = false;
+      if(err && err.code === 'permission-denied'){ authDenied(); return; }
+      if(!authRemembered()) showGate('Impossibile verificare l\'accesso: controlla la connessione e riprova.');
       fbSetStatus('Non sincronizzato — ' + String(err.message).replace(/\.$/, '') + '. Le modifiche restano su questo dispositivo e verranno unite al prossimo tentativo.');
     }).then(function(){
       fbSyncing = false;
@@ -1865,10 +1919,13 @@ OP01-003 | Nami | OP-01 Romance Dawn | C"></textarea>
     }
   });
 
-  document.getElementById('fb-login').addEventListener('click', function(){
-    if(!fb){ showMsg('fb-msg', 'Login non disponibile: controlla la connessione e ricarica la pagina.', false); return; }
+  document.getElementById('gate-login').addEventListener('click', function(){
+    gateNotice = '';
+    if(fbUser){ showGate('', true); fbSync(); return; } // già loggato ma non verificato: riprova la sincronizzazione
+    if(!fb){ showGate('Login non disponibile: controlla la connessione e ricarica la pagina.'); return; }
+    showGate('');
     fb.login().catch(function(err){
-      if(err.code !== 'auth/popup-closed-by-user' && err.code !== 'auth/cancelled-popup-request') showMsg('fb-msg', err.message, false);
+      if(err.code !== 'auth/popup-closed-by-user' && err.code !== 'auth/cancelled-popup-request') showGate(err.message);
     });
   });
 
@@ -2110,6 +2167,11 @@ OP01-003 | Nami | OP-01 Romance Dawn | C"></textarea>
     }
   });
 
+  if(authRemembered()) openApp();
+  // Se l'SDK Firebase non carica (offline) e il dispositivo non è mai stato verificato, resta l'accesso con un avviso.
+  setTimeout(function(){
+    if(!fb && !authRemembered()) showGate('Impossibile verificare l\'accesso: controlla la connessione e ricarica la pagina.');
+  }, 8000);
   loadData();
   // Il catalogo serve alle copertine della galleria: si carica subito e si ridisegna quando arriva.
   loadCatalog().then(function(cat){
