@@ -11,7 +11,7 @@ var total = function(d){ return d.cards.reduce(function(n, c){ return n + c[1]; 
 var JSON_DECK = '["Exported from onepiecetopdecks.com","EB05-010","OP09-106","OP09-106","OP09-106","OP09-106","OP13-113","OP13-113","OP13-113","OP13-113","EB05-050","EB05-050","EB05-050","EB05-050","EB05-057","EB05-057","EB05-057","EB05-057","OP17-109","OP17-109","OP17-109","OP17-109","EB05-052","EB05-052","EB05-052","EB05-055","EB05-055","EB05-055","EB05-055","OP14-108","OP14-108","OP14-108","OP14-108","OP17-114","OP17-114","EB03-055","EB03-055","EB03-055","EB04-018","EB04-018","EB04-018","OP13-031","OP13-031","EB05-016","EB05-016","EB05-016","EB05-016","OP17-022","OP17-022","OP17-022","OP14-118","OP14-118"]';
 var LINES_DECK = '1xEB05-010\n4xOP09-106\n4xOP13-113\n4xEB05-050\n4xEB05-057\n4xOP17-109\n3xEB05-052\n4xEB05-055\n4xOP14-108\n2xOP17-114\n3xEB03-055\n3xEB04-018\n2xOP13-031\n4xEB05-016\n3xOP17-022\n2xOP14-118\n';
 
-test('parseDeck: JSON onepiecetopdecks e righe NxCODICE danno lo stesso mazzo', function(){
+test('parseDeck: onepiecetopdecks JSON and NxCODE lines give the same deck', function(){
   var a = L.parseDeck(JSON_DECK), b = L.parseDeck(LINES_DECK);
   assert.equal(a.leader, 'EB05-010');
   assert.equal(a.cards.length, 16);
@@ -19,7 +19,7 @@ test('parseDeck: JSON onepiecetopdecks e righe NxCODICE danno lo stesso mazzo', 
   assert.deepEqual(a, b);
 });
 
-test('parseDeck: codici oplaytcg reali, da soli o dentro un link', function(){
+test('parseDeck: real oplaytcg codes, alone or inside a link', function(){
   var oplay = {
     '2kFAocIICXDrEFBDhlw04b8OOHOAYOGAaD7HHARBZjbxyQU': ['EB05-010', 15],
     '2gNAEcICBuIKAOACG8AMEOAOC2AYCXBfANBCg_gHA_gIgtDBAGhPAJBQAFgJ': ['OP13-001', 15],
@@ -36,7 +36,7 @@ test('parseDeck: codici oplaytcg reali, da soli o dentro un link', function(){
   });
 });
 
-test('parseDeck: input non validi = errore, mai un mazzo a metà', function(){
+test('parseDeck: invalid input = error, never a half deck', function(){
   var good = '2kFAocIICXDrEFBDhlw04b8OOHOAYOGAaD7HHARBZjbxyQU', last = good.slice(-1);
   ['', '   ', null, undefined, '[1,2', 'ciao a tutti', '4xOP01-001\nnon una riga',
     good.slice(0, -1) + (last === 'A' ? 'B' : 'A')].forEach(function(bad){
@@ -47,24 +47,24 @@ test('parseDeck: input non validi = errore, mai un mazzo a metà', function(){
   assert.equal(L.parseDeck('[1,2').error, 'Elenco JSON non valido.');
 });
 
-test('parseDeck: maiuscole/minuscole, spazi, righe vuote e CRLF nelle righe NxCODICE', function(){
+test('parseDeck: upper/lower case, spaces, empty lines and CRLF in NxCODE lines', function(){
   var d = L.parseDeck('1 x zz01-001\r\n\r\n 4xZZ01-002 \r\n');
   assert.deepEqual(d, { leader: 'ZZ01-001', cards: [['ZZ01-001', 1], ['ZZ01-002', 4]] });
 });
 
-test('parseDeck: lo stesso codice più volte si somma, senza perdere carte', function(){
+test('parseDeck: the same code several times is summed, without losing cards', function(){
   var rows = L.parseDeck('2xZZ01-002\n1xZZ01-001\n2xZZ01-002');
   assert.deepEqual(rows.cards, [['ZZ01-002', 4], ['ZZ01-001', 1]]);
   var json = L.parseDeck('["h","ZZ01-001","ZZ01-002","zz01-002"," ZZ01-002 "]');
   assert.deepEqual(json.cards, [['ZZ01-001', 1], ['ZZ01-002', 3]]);
 });
 
-test('parseDeck: il Leader è la prima carta solo se ha una copia', function(){
+test('parseDeck: the Leader is the first card only if it has one copy', function(){
   assert.equal(L.parseDeck('1xZZ01-001\n4xZZ01-002').leader, 'ZZ01-001');
   assert.equal(L.parseDeck('4xZZ01-002\n1xZZ01-001').leader, null);
 });
 
-test('parseDeck: nel JSON le voci che non sono codici si scartano', function(){
+test('parseDeck: in the JSON, entries that are not codes are dropped', function(){
   var d = L.parseDeck('["Exported from x", 5, null, "ZZ01-001", "non-un-codice"]');
   assert.deepEqual(d.cards, [['ZZ01-001', 1]]);
 });
@@ -112,7 +112,7 @@ function encode(leader, cards, count, fixSum){
   return '2' + body + ALPHABET.charAt((sum + (fixSum || 0)) % 64);
 }
 
-test('oplay: Leader + carte con tutti i tipi di codice (famiglia, stesso set, lettere, per esteso)', function(){
+test('oplay: Leader + cards with every code type (family, same set, letters, spelled out)', function(){
   var code = encode({ fam: 'OP', set: 13, num: 1 }, [
     { fam: 'OP', set: 13, num: 5, qty: 4 },
     { same: true, num: 6, qty: 3 },       // same set as the previous one
@@ -129,12 +129,12 @@ test('oplay: Leader + carte con tutti i tipi di codice (famiglia, stesso set, le
   ] });
 });
 
-test('oplay: senza Leader dichiarato il leader è nullo', function(){
+test('oplay: without a declared Leader the leader is null', function(){
   var d = L.parseDeck(encode(null, [{ fam: 'EB', set: 5, num: 10, qty: 4 }, { same: true, num: 11, qty: 2 }]));
   assert.deepEqual(d, { leader: null, cards: [['EB05-010', 4], ['EB05-011', 2]] });
 });
 
-test('oplay: codici malformati danno errore', function(){
+test('oplay: malformed codes give an error', function(){
   var ok = [{ fam: 'OP', set: 1, num: 1, qty: 1 }];
   assert.equal(L.parseDeck(encode(null, ok)).error, undefined, 'il codice di base è valido');
   var bad = {
@@ -153,7 +153,7 @@ test('oplay: codici malformati danno errore', function(){
   });
 });
 
-test('oplay: versione diversa da "2" o codice troppo corto = errore', function(){
+test('oplay: version other than "2" or code too short = error', function(){
   var code = encode(null, [{ fam: 'OP', set: 1, num: 1, qty: 1 }]);
   assert.ok(L.parseDeck('1' + code.slice(1)).error);
   assert.equal(L.decodeOplayDeck('2A'), null);
@@ -163,7 +163,7 @@ test('oplay: versione diversa da "2" o codice troppo corto = errore', function()
 // ---- missing cards ----
 function owned(code, n){ return { code: code, name: 'Carta ' + code, set: 'Set Finto', rarity: 'C', leader: false, owned: n }; }
 
-test('deckStatus: conta solo le copie richieste e separa mancanti e complete', function(){
+test('deckStatus: counts only the requested copies and separates missing and complete', function(){
   var cards = [owned('ZZ01-001', 1), owned('ZZ01-002', 4), owned('ZZ01-003', 2), owned('ZZ01-004', 0)];
   var deck = { cards: [['ZZ01-001', 1], ['ZZ01-002', 3], ['ZZ01-003', 4], ['ZZ01-004', 2]] };
   var s = L.deckStatus(cards, deck);
@@ -173,7 +173,7 @@ test('deckStatus: conta solo le copie richieste e separa mancanti e complete', f
   assert.deepEqual(s.missing.map(function(i){ return [i.code, i.need, i.owned]; }), [['ZZ01-003', 4, 2], ['ZZ01-004', 2, 0]]);
 });
 
-test('deckStatus: codice scritto in modo diverso e owned mancante', function(){
+test('deckStatus: code written differently and missing owned', function(){
   var c = owned('ZZ01-001', 2);
   delete c.owned;
   var s = L.deckStatus([c], { cards: [['ZZ01-001', 1]] });
@@ -181,7 +181,7 @@ test('deckStatus: codice scritto in modo diverso e owned mancante', function(){
   assert.equal(s.missing.length, 1);
 });
 
-test('deckStatus: noSet è vero solo se non c\'è la carta né il suo set', function(){
+test('deckStatus: noSet is true only if neither the card nor its set exists', function(){
   var cards = [owned('ZZ01-001', 1)];
   var s = L.deckStatus(cards, { cards: [['ZZ01-002', 1], ['ZZ09-001', 1], ['ZZ01-001', 1]] });
   var by = {};
@@ -192,7 +192,7 @@ test('deckStatus: noSet è vero solo se non c\'è la carta né il suo set', func
   assert.equal(L.deckStatus([], { cards: [['ZZ01-001', 1]] }).missing[0].noSet, true, 'collezione vuota');
 });
 
-test('deckStatus: due mazzi con le stesse carte non si "prenotano" le copie', function(){
+test('deckStatus: two decks with the same cards do not "reserve" copies from each other', function(){
   var cards = [owned('ZZ01-001', 4)];
   var a = L.deckStatus(cards, { cards: [['ZZ01-001', 4]] }), b = L.deckStatus(cards, { cards: [['ZZ01-001', 4]] });
   assert.equal(a.have, 4);
@@ -200,7 +200,7 @@ test('deckStatus: due mazzi con le stesse carte non si "prenotano" le copie', fu
   assert.equal(a.missing.length + b.missing.length, 0);
 });
 
-test('deckStatus: mazzo vuoto e input non modificati', function(){
+test('deckStatus: empty deck and inputs not modified', function(){
   var cards = [owned('ZZ01-001', 2)], deck = { cards: [['ZZ01-001', 3]] };
   var c0 = JSON.stringify(cards), d0 = JSON.stringify(deck);
   assert.deepEqual(L.deckStatus(cards, { cards: [] }), { need: 0, have: 0, missing: [], done: [] });

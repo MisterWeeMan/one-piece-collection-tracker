@@ -14,17 +14,17 @@ function snap(cards, deleted, history){ return { cards: cards, deleted: deleted 
 function codes(s){ return s.cards.map(function(c){ return c.code; }).sort(); }
 function byCode(s, code){ return s.cards.filter(function(c){ return c.code === code; })[0]; }
 
-test('merge: carta solo locale o solo remota resta (niente perdite)', function(){
+test('merge: a card only local or only remote is kept (no loss)', function(){
   var m = L.mergeSnapshots(snap([card('ZZ01-001', 5)]), snap([card('ZZ01-002', 5)]));
   assert.deepEqual(codes(m), ['ZZ01-001', 'ZZ01-002']);
 });
 
-test('merge: stesso codice nei due lati = una sola carta', function(){
+test('merge: same code on both sides = a single card', function(){
   var m = L.mergeSnapshots(snap([card('ZZ01-001', 5)]), snap([card('ZZ01-001', 5)]));
   assert.equal(m.cards.length, 1);
 });
 
-test('merge: vince updatedAt maggiore; a parità la remota; senza updatedAt vale 0', function(){
+test('merge: higher updatedAt wins; on a tie the remote wins; missing updatedAt counts as 0', function(){
   var loc = card('ZZ01-001', 20, { owned: 3 }), rem = card('ZZ01-001', 10, { owned: 1 });
   assert.equal(byCode(L.mergeSnapshots(snap([loc]), snap([rem])), 'ZZ01-001').owned, 3);
   assert.equal(byCode(L.mergeSnapshots(snap([rem]), snap([loc])), 'ZZ01-001').owned, 3);
@@ -35,46 +35,46 @@ test('merge: vince updatedAt maggiore; a parità la remota; senza updatedAt vale
   assert.equal(byCode(L.mergeSnapshots(snap([nuova]), snap([vecchia])), 'ZZ01-001').owned, 2);
 });
 
-test('merge: lapide remota più recente (o uguale) della carta locale la elimina', function(){
+test('merge: remote tombstone newer than (or equal to) the local card deletes it', function(){
   var loc = snap([card('ZZ01-001', 10)]);
   assert.equal(L.mergeSnapshots(loc, snap([], { 'ZZ01-001': 11 })).cards.length, 0);
   assert.equal(L.mergeSnapshots(loc, snap([], { 'ZZ01-001': 10 })).cards.length, 0, 'uguale = eliminata');
 });
 
-test('merge: lapide locale contro carta remota (simmetrico)', function(){
+test('merge: local tombstone against remote card (symmetric)', function(){
   var rem = snap([card('ZZ01-001', 10)]);
   assert.equal(L.mergeSnapshots(snap([], { 'ZZ01-001': 11 }), rem).cards.length, 0);
 });
 
-test('merge: carta più recente della lapide resta e la lapide viene tolta', function(){
+test('merge: card newer than the tombstone is kept and the tombstone is removed', function(){
   var m = L.mergeSnapshots(snap([card('ZZ01-001', 20)]), snap([], { 'ZZ01-001': 10 }));
   assert.deepEqual(codes(m), ['ZZ01-001']);
   assert.deepEqual(m.deleted, {});
 });
 
-test('merge: carta senza updatedAt non batte una lapide', function(){
+test('merge: card without updatedAt does not beat a tombstone', function(){
   var m = L.mergeSnapshots(snap([card('ZZ01-001')]), snap([], { 'ZZ01-001': 1 }));
   assert.equal(m.cards.length, 0);
 });
 
-test('merge: due lapidi sullo stesso codice, tiene la più recente', function(){
+test('merge: two tombstones on the same code, the newer one is kept', function(){
   var m = L.mergeSnapshots(snap([], { 'ZZ01-001': 5 }), snap([], { 'ZZ01-001': 9 }));
   assert.deepEqual(m.deleted, { 'ZZ01-001': 9 });
 });
 
-test('merge: la lapide di una carta assente resta (serve agli altri dispositivi)', function(){
+test('merge: tombstone of a missing card is kept (other devices need it)', function(){
   var m = L.mergeSnapshots(snap([], { 'ZZ01-009': 7 }), snap([]));
   assert.deepEqual(m.deleted, { 'ZZ01-009': 7 });
 });
 
-test('merge: remoto vuoto (documento nuovo) non perde nulla', function(){
+test('merge: empty remote (new document) loses nothing', function(){
   var m = L.mergeSnapshots(snap([card('ZZ01-001', 5)], { 'ZZ01-002': 3 }, { '2026-01-05': { t: 1, owned: 1, target: 4 } }), L.cleanSnapshot({}));
   assert.deepEqual(codes(m), ['ZZ01-001']);
   assert.deepEqual(m.deleted, { 'ZZ01-002': 3 });
   assert.equal(Object.keys(m.history).length, 1);
 });
 
-test('merge: storico, unione dei giorni e vince t maggiore', function(){
+test('merge: history, days are united and the higher t wins', function(){
   var loc = snap([], {}, { '2026-01-05': { t: 20, owned: 9, target: 40 }, '2026-01-06': { t: 5, owned: 1, target: 4 } });
   var rem = snap([], {}, { '2026-01-05': { t: 10, owned: 8, target: 40 }, '2026-01-04': { t: 1, owned: 0, target: 4 } });
   var m = L.mergeSnapshots(loc, rem);
@@ -82,7 +82,7 @@ test('merge: storico, unione dei giorni e vince t maggiore', function(){
   assert.equal(m.history['2026-01-05'].owned, 9);
 });
 
-test('merge: non modifica gli input', function(){
+test('merge: does not modify the inputs', function(){
   var loc = snap([card('ZZ01-001', 20)], { 'ZZ01-002': 3 });
   var rem = snap([card('ZZ01-001', 10), card('ZZ01-002', 1)], { 'ZZ01-003': 4 });
   var l0 = JSON.stringify(loc), r0 = JSON.stringify(rem);
@@ -91,7 +91,7 @@ test('merge: non modifica gli input', function(){
   assert.equal(JSON.stringify(rem), r0);
 });
 
-test('merge: ripetuto non cambia il risultato (il sync fa leggi, unisci, riunisci)', function(){
+test('merge: repeating it does not change the result (sync does read, merge, merge again)', function(){
   var a = snap([card('ZZ01-001', 20, { owned: 2 }), card('ZZ01-002', 5)], { 'ZZ01-003': 9 });
   var b = snap([card('ZZ01-001', 10, { owned: 1 }), card('ZZ01-003', 4)], { 'ZZ01-002': 6 });
   var ab = L.mergeSnapshots(a, b);
@@ -100,13 +100,13 @@ test('merge: ripetuto non cambia il risultato (il sync fa leggi, unisci, riunisc
   assert.equal(L.canonSnapshot(L.mergeSnapshots(a, a)), L.canonSnapshot(a));
 });
 
-test('merge: l\'ordine dei due lati non conta (senza parità)', function(){
+test('merge: the order of the two sides does not matter (no ties)', function(){
   var a = snap([card('ZZ01-001', 20, { owned: 2 })], { 'ZZ01-003': 9 });
   var b = snap([card('ZZ01-001', 10, { owned: 1 }), card('ZZ01-003', 4)], {});
   assert.equal(L.canonSnapshot(L.mergeSnapshots(a, b)), L.canonSnapshot(L.mergeSnapshots(b, a)));
 });
 
-test('merge: scenario a due dispositivi, rinomina del codice', function(){
+test('merge: two-device scenario, code rename', function(){
   // Device A renames ZZ01-001 to ZZ01-010: new card + tombstone of the old one.
   var cards = [card('ZZ01-001', 10, { owned: 2 })], deleted = {};
   L.upsertCard(cards, { code: 'ZZ01-010', name: 'Carta ZZ01-001', set: 'Set Finto' }, 100);
@@ -118,13 +118,13 @@ test('merge: scenario a due dispositivi, rinomina del codice', function(){
   assert.deepEqual(codes(L.mergeSnapshots(b, a)), ['ZZ01-010']);
 });
 
-test('merge: scenario elimina su A, modifica successiva su B = la modifica vince', function(){
+test('merge: scenario delete on A, later edit on B = the edit wins', function(){
   var a = snap([], { 'ZZ01-001': 50 });
   var b = snap([card('ZZ01-001', 60, { owned: 4 })]);
   assert.equal(byCode(L.mergeSnapshots(a, b), 'ZZ01-001').owned, 4);
 });
 
-test('merge: vince la carta intera, i campi di versioni diverse non si mescolano', function(){
+test('merge: the whole card wins, fields from different versions are not mixed', function(){
   // Known limit: owned marked on one device and wishlist on another, one of the two changes is lost.
   var a = card('ZZ01-001', 20, { owned: 3 }), b = card('ZZ01-001', 10, { wishlist: true });
   var c = byCode(L.mergeSnapshots(snap([a]), snap([b])), 'ZZ01-001');
@@ -132,7 +132,7 @@ test('merge: vince la carta intera, i campi di versioni diverse non si mescolano
   assert.equal(c.wishlist, undefined);
 });
 
-test('canonSnapshot: l\'ordine non conta, un contenuto diverso cambia la stringa', function(){
+test('canonSnapshot: order does not matter, different content changes the string', function(){
   var x = snap([card('ZZ01-001', 1), card('ZZ01-002', 2)], { b: 2, a: 1 });
   var y = snap([card('ZZ01-002', 2), card('ZZ01-001', 1)], { a: 1, b: 2 });
   assert.equal(L.canonSnapshot(x), L.canonSnapshot(y));
@@ -141,7 +141,7 @@ test('canonSnapshot: l\'ordine non conta, un contenuto diverso cambia la stringa
   assert.notEqual(L.canonSnapshot(x), L.canonSnapshot(snap(x.cards, { a: 1 })));
 });
 
-test('cleanMeta e cleanSnapshot: dati malformati danno valori vuoti', function(){
+test('cleanMeta and cleanSnapshot: malformed data gives empty values', function(){
   [null, undefined, 'testo', 5, [], { deleted: 'x', history: 3 }].forEach(function(bad){
     assert.deepEqual(L.cleanMeta(bad), { deleted: {}, history: {} });
   });
@@ -161,7 +161,7 @@ function deck(id, updatedAt, extra){
 }
 function ids(s){ return s.list.map(function(d){ return d.id; }).sort(); }
 
-test('mazzi: unione, vince updatedAt maggiore, a parità la remota', function(){
+test('decks: union, higher updatedAt wins, on a tie the remote wins', function(){
   var m = L.mergeDecks({ list: [deck('a', 20, { name: 'locale' }), deck('b', 1)], deleted: {} },
     { list: [deck('a', 10, { name: 'remoto' }), deck('c', 1)], deleted: {} });
   assert.deepEqual(ids(m), ['a', 'b', 'c']);
@@ -170,7 +170,7 @@ test('mazzi: unione, vince updatedAt maggiore, a parità la remota', function(){
   assert.equal(p.list[0].name, 'remoto');
 });
 
-test('mazzi: la lapide impedisce che un mazzo eliminato riappaia', function(){
+test('decks: the tombstone stops a deleted deck from reappearing', function(){
   var rem = { list: [deck('a', 10)], deleted: {} };
   assert.equal(L.mergeDecks({ list: [], deleted: { a: 10 } }, rem).list.length, 0, 'uguale = eliminato');
   assert.equal(L.mergeDecks({ list: [], deleted: { a: 11 } }, rem).list.length, 0);
@@ -179,7 +179,7 @@ test('mazzi: la lapide impedisce che un mazzo eliminato riappaia', function(){
   assert.deepEqual(back.deleted, {});
 });
 
-test('mazzi: due lapidi, tiene la più recente; input non modificati', function(){
+test('decks: two tombstones, the newer one is kept; inputs not modified', function(){
   var loc = { list: [deck('a', 1)], deleted: { x: 5 } }, rem = { list: [], deleted: { x: 9, a: 3 } };
   var l0 = JSON.stringify(loc), r0 = JSON.stringify(rem);
   var m = L.mergeDecks(loc, rem);
@@ -188,7 +188,7 @@ test('mazzi: due lapidi, tiene la più recente; input non modificati', function(
   assert.equal(JSON.stringify(rem), r0);
 });
 
-test('mazzi: merge ripetuto stabile e forma canonica indipendente dall\'ordine', function(){
+test('decks: repeated merge is stable and canonical form does not depend on order', function(){
   var a = { list: [deck('a', 20), deck('b', 5)], deleted: { z: 3 } };
   var b = { list: [deck('a', 10), deck('c', 4)], deleted: { b: 6 } };
   var ab = L.mergeDecks(a, b);
@@ -198,7 +198,7 @@ test('mazzi: merge ripetuto stabile e forma canonica indipendente dall\'ordine',
   assert.notEqual(L.canonDecks({ list: [deck('a', 1)], deleted: {} }), L.canonDecks({ list: [deck('a', 2)], deleted: {} }));
 });
 
-test('cleanDecks: scarta mazzi e righe non validi', function(){
+test('cleanDecks: drops invalid decks and rows', function(){
   assert.deepEqual(L.cleanDecks(null), { list: [], deleted: {} });
   assert.deepEqual(L.cleanDecks('x'), { list: [], deleted: {} });
   assert.deepEqual(L.cleanDecks({ list: 'no', deleted: 4 }), { list: [], deleted: {} });
