@@ -1,6 +1,6 @@
 # CLAUDE.md — One Piece collection tracker
 
-Personal hobby project (not related to work or the ExSVN repo). Facts marked **TO VERIFY** are unconfirmed; ask the user instead of assuming.
+Personal hobby project.
 
 ## How to work here
 
@@ -17,19 +17,26 @@ A static web app to track a One Piece TCG (trading card game) collection: checkl
 
 ## Files
 
-- `index.html` (~1800 lines): the whole app — CSS, markup and two scripts. No framework, no bundler, `var` and ES5-style functions in the main IIFE.
-  - Main script: state, rendering, `localStorage` persistence (`op-collection-cards`, `op-collection-meta`), sync merge logic, filters, detail dialog.
+- `index.html` (~1900 lines): the app — CSS, markup and two scripts (plus the `logic.js` tag). No framework, no bundler, `var` and ES5-style functions in the main IIFE.
+  - Main script: state, rendering, `localStorage` persistence (`op-collection-cards`, `op-collection-meta`), filters, detail dialog. For the pure logic it only keeps thin wrappers (`var L = window.OPLogic`) that pass `state`/`meta`/`Date.now()` to `logic.js`.
   - `<script type="module">` at the end: Firebase (Google login + Firestore sync) loaded from the gstatic CDN, exposed to the main script through `window.fbInit`. One Firestore document per user (`users/<uid>/data/collection`) holding the whole snapshot as a JSON string; ~1 MiB limit.
   - Meta data for sync: `deleted` tombstones (without them a deletion is undone by merging with another device) and `history` per day.
   - `SET_RELEASE_ORDER`: manual list of set prefixes, newest first. **Add the new set code here when a set is released** (last commit did that for EB05).
+- `logic.js`: pure logic, no DOM/`localStorage`/Firestore, ES5 with `var`, Italian comments. Loaded by `index.html` with a classic `<script src="logic.js">` (exposes `window.OPLogic`) and by the tests with `require('../logic.js')` (CommonJS: no `package.json` needed). Functions take data and `now` as parameters. Contains: card upsert/delete/toggle (`upsertCard`, `deleteCard`, `tombstoneAll`, `toggleOwned`, `toggleWish`), `recordSnapshot`, sync merge (`mergeSnapshots`, `mergeDecks`, `canonSnapshot`, `canonDecks`, `cleanMeta`, `cleanSnapshot`, `cleanDecks`), deck formats (`parseDeck`, `decodeOplayDeck`), `deckStatus` (missing cards), `parseBulk`. New logic of that kind goes here, not inline in `index.html`. Not in it: filters, sorting, rendering, `SET_RELEASE_ORDER`. Caching risk: GitHub Pages caches files ~10 minutes, so right after a deploy that changes `logic.js` a browser may briefly mix a new `index.html` with an old `logic.js` (app broken until it refreshes); no `?v=` on the tag on purpose.
+- `tests/*.test.js`: `node --test` suites (`cards`, `merge`, `decks`) using Node's built-in runner, no dependency. The old `scripts/check-deck-parser.mjs` was replaced by `tests/decks.test.js`.
 - `card-catalog.json` (~570 KB, one line): generated, do not hand-edit. Per card code: structured data and the list of versions with the TCGplayer product id used for images. Loaded by the app with `fetch`; if missing the detail dialog still works without images.
 - `scripts/build-catalog.mjs`: regenerates the catalog from https://tcgcsv.com (daily mirror of the TCGplayer API). Run with `node scripts/build-catalog.mjs` (Node 18+) when a new set comes out, then commit `card-catalog.json` together with `index.html`. It sets a descriptive User-Agent (the service rejects Node's default with 401) and waits between requests: keep both. Card effect text is deliberately not copied.
 - `.gitignore` ignores `.claude/` (local Claude Code settings).
 
 ## Run and test
 
-- No build. The user's current way of testing (keep it for now): insert sets through the app's own internal data management, then check the result in the UI. Do not set up a local server or scripts unasked. Note: the catalog `fetch` does not work from `file://`, so the detail dialog images need a web server; propose one only if a change touches that.
-- No automated tests. After a UI change describe what to check by hand (desktop and phone width, checklist, wishlist, detail dialog). Google login and sync need a real browser session with the user's account: ask the user to test them.
+- No build. The catalog `fetch` does not work from `file://`, so the detail dialog images need a web server; propose one only if a change touches that. Do not set up a local server unasked.
+- **Test strategy (user's decision, 2026-11-05; implemented, 59 tests):** automated tests on the pure logic with Node's built-in runner (`node --test`), no dependency, no npm package. Pure logic = code that decides what is stored or computed without touching the screen: sync merge with `deleted` tombstones, deck import parsing, missing-cards calculation.
+  - That logic lives in `logic.js`, loaded by `index.html` with a `<script>` tag (still no build); tests live in `tests/`. This is the one accepted exception to "the whole app is `index.html`".
+  - New or changed logic of that kind ships with a test in the same change. Run `node --test` before saying a change is done and before any push (a push deploys).
+  - **Tests never touch real data:** in-memory objects and made-up cards only, no `localStorage`, no Firestore, never the user's collection.
+  - The UI is not covered by tests. After a UI change describe what to check by hand (desktop and phone width, checklist, wishlist, detail dialog). Google login and sync need a real browser session with the user's account: ask the user to test them.
+  - Not chosen: browser automation (Playwright), because it adds dependencies and maintenance. Reconsider only when the UI is stable, and discuss it first.
 - Data safety: `localStorage` and Firestore hold the user's real collection. Never change the stored format (`op-collection-cards` entries, meta) without discussing a migration first.
 
 ## Git workflow
@@ -53,9 +60,4 @@ The app shows only a login screen until a valid Google sign-in exists. Only the 
 
 ## Firestore rules (as pasted by the user, 2026-11-05)
 
-Rules live in the Firebase console, not in this repo. Current content: one rule, `match /users/{uid}/{document=**}` with `allow read, write: if request.auth != null && request.auth.uid == uid`. So any path under `users/<own uid>/` is allowed, with no validation of fields or size. If the console rules may have changed since, or a task needs more than this, ask the user; never assume.
-
-## Open questions
-
-1. Where exactly is the in-app data management used for test sets? **TO VERIFY** with the user. (Firestore sync has always been tried directly in production, never with test data; ignore for now.)
-2. Is there a Firestore rules file or a Firebase project to keep in sync with the repo? Nothing is versioned here today.
+Rules live only in the Firebase console (confirmed by the user, 2026-11-05): no rules file, no Firebase CLI project, nothing to keep in sync with the repo. Current content: one rule, `match /users/{uid}/{document=**}` with `allow read, write: if request.auth != null && request.auth.uid == uid`. So any path under `users/<own uid>/` is allowed, with no validation of fields or size. If the console rules may have changed since, or a task needs more than this, ask the user; never assume.
