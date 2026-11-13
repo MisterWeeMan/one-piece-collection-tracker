@@ -94,6 +94,14 @@
     touch(card, now);
   }
 
+  // Moves the copies of one version to another one (summed if that one is already in the list).
+  function moveTradeVersion(card, from, to, now){
+    if(!card.trade || !card.trade[from] || from === to) return;
+    card.trade[to] = (card.trade[to] || 0) + card.trade[from];
+    delete card.trade[from];
+    touch(card, now);
+  }
+
   // ---- METADATA AND HISTORY ----
   function cleanMeta(m){
     m = m && typeof m === 'object' ? m : {};
@@ -375,7 +383,7 @@
   var OPLogic = {
     target: target, normalizeCode: normalizeCode, clampOwned: clampOwned,
     upsertCard: upsertCard, deleteCard: deleteCard, tombstoneAll: tombstoneAll,
-    toggleOwned: toggleOwned, toggleWish: toggleWish, toggleTrade: toggleTrade, setTradeCopies: setTradeCopies,
+    toggleOwned: toggleOwned, toggleWish: toggleWish, toggleTrade: toggleTrade, setTradeCopies: setTradeCopies, moveTradeVersion: moveTradeVersion,
     cleanMeta: cleanMeta, cleanSnapshot: cleanSnapshot, recordSnapshot: recordSnapshot,
     mergeSnapshots: mergeSnapshots, canonSnapshot: canonSnapshot,
     parseDeck: parseDeck, decodeOplayDeck: decodeOplayDeck,

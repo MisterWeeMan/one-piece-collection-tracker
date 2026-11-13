@@ -121,6 +121,28 @@ test('setTradeCopies: sets or adds a version; 0 removes it and the last one take
   assert.equal(c.updatedAt, 9);
 });
 
+test('moveTradeVersion: the copies go to the other version, added up when it is already in the list', function(){
+  var c = { code: 'ZZ01-001', owned: 0, trade: { '111': 2 } };
+  L.moveTradeVersion(c, '111', '222', 5);
+  assert.deepEqual(c.trade, { '222': 2 });
+  assert.equal(c.updatedAt, 5);
+  L.setTradeCopies(c, '333', 1, 6);
+  L.moveTradeVersion(c, '333', '222', 7);
+  assert.deepEqual(c.trade, { '222': 3 });
+  assert.equal(c.updatedAt, 7);
+});
+
+test('moveTradeVersion: same version, or a version not in the list, changes nothing', function(){
+  var c = { code: 'ZZ01-001', owned: 0, trade: { '111': 2 } };
+  L.moveTradeVersion(c, '111', '111', 5);
+  L.moveTradeVersion(c, '999', '222', 6);
+  assert.deepEqual(c.trade, { '111': 2 });
+  assert.equal('updatedAt' in c, false);
+  var d = { code: 'ZZ01-002', owned: 0 };
+  L.moveTradeVersion(d, '111', '222', 7);
+  assert.equal('trade' in d, false);
+});
+
 // ---- history ----
 var DAY = new Date(2026, 0, 5, 12, 0, 0).getTime(); // 5 January 2026, local time
 

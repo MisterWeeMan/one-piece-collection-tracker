@@ -166,19 +166,18 @@
   .wish-btn.active svg{ fill: currentColor; }
   .trade-btn.active svg{ stroke-width: 2.8; }
 
-  /* TRADE LIST: one panel per card, one row per version in the binder */
-  .trade-list{ display:grid; grid-template-columns:repeat(auto-fill, minmax(min(100%, 300px), 1fr)); gap:16px; align-items:start; }
-  .trade-card{ background:var(--panel); border:1px solid var(--border); border-radius:12px; padding:12px; display:flex; flex-direction:column; gap:10px; min-width:0; }
-  .trade-head{ display:flex; align-items:center; gap:8px; min-width:0; }
-  .trade-head .name{ flex:1; min-width:0; }
-  .trade-row{ display:flex; align-items:center; gap:12px; }
-  .trade-thumb{ position:relative; width:48px; aspect-ratio:600 / 838; flex-shrink:0; border-radius:6px; overflow:hidden; cursor:pointer; background:repeating-linear-gradient(135deg, #17334B 0 10px, #143049 10px 20px); }
-  .trade-thumb img{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; display:block; }
-  .trade-thumb img.broken{ display:none; }
-  .trade-ver{ flex:1; min-width:0; font-size:13.5px; }
-  .stepper{ display:flex; align-items:center; gap:6px; }
-  .stepper button{ width:40px; height:40px; border-radius:10px; border:1px solid var(--border); background:var(--panel-2); color:var(--text); font-size:20px; line-height:1; padding:0; }
-  .stepper b{ min-width:24px; text-align:center; font-variant-numeric:tabular-nums; }
+  /* TRADE LIST: a gallery with one tile per card version in the binder */
+  .trade-gal{ display:grid; grid-template-columns:repeat(auto-fill, minmax(min(100%, 150px), 1fr)); gap:12px; }
+  @media (min-width: 861px){ .trade-gal{ grid-template-columns:repeat(auto-fill, minmax(210px, 1fr)); } }
+  .trade-entry{ background:var(--panel); border:1px solid var(--border); border-radius:12px; padding:8px; min-width:0; display:flex; flex-direction:column; gap:6px; }
+  .trade-info{ display:flex; flex-direction:column; gap:2px; min-width:0; }
+  .trade-info .name{ white-space:normal; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; line-height:1.3; min-height:2.6em; }
+  .trade-vlabel{ font-size:12.5px; color:var(--text-muted); }
+  .copies-badge{ position:absolute; top:6px; right:6px; background:rgba(9,21,34,.85); color:var(--gold); border-radius:999px; padding:2px 9px; font-weight:700; font-size:13px; }
+  .trade-entry select.sel{ width:100%; height:32px; padding:0 28px 0 10px; color:var(--text); }
+  .stepper{ display:flex; gap:6px; }
+  .stepper button{ flex:1; height:32px; border-radius:8px; border:1px solid var(--border); background:var(--panel-2); color:var(--text); font-size:18px; line-height:1; padding:0; }
+  .cm-link{ display:flex; align-items:center; justify-content:center; height:32px; padding:0 10px; font-size:13px; }
 
   /* STATISTICS */
   .stats-list{ display:grid; grid-template-columns:repeat(auto-fit, minmax(min(100%, 420px), 1fr)); gap:16px; align-items:start; }
@@ -1187,27 +1186,35 @@ OP01-003 | Nami | OP-01 Romance Dawn | C"></textarea>
     return v ? v[1] : (id === '0' ? 'Base' : 'Versione ' + id);
   }
 
-  function tradeCardHtml(c){
-    var code = escapeHtml(c.code);
-    var h = '<div class="trade-card"><div class="trade-head"><span class="card-code">' + code + '</span>'
-      + '<span class="name" data-detail="' + code + '">' + escapeHtml(c.name) + '</span>';
-    if(c.rarity) h += '<span class="rarity-pill ' + rarityClass(c.rarity) + '">' + escapeHtml(c.rarity) + '</span>';
-    h += '</div>';
-    Object.keys(c.trade).forEach(function(id){
-      var img = id === '0' ? imgFor(c.code) : tcgImg(id, 200), eid = escapeHtml(id);
-      h += '<div class="trade-row"><div class="trade-thumb" data-detail="' + code + '">'
-        + (img ? '<img src="' + img + '" alt="" loading="lazy" referrerpolicy="no-referrer">' : '') + '</div>'
-        + '<span class="trade-ver">' + escapeHtml(versionLabel(c.code, id)) + '</span>'
-        + '<div class="stepper"><button data-trade-step="-1" data-code="' + code + '" data-ver="' + eid + '" aria-label="Togli una copia">\u2212</button>'
-        + '<b>' + c.trade[id] + '</b>'
-        + '<button data-trade-step="1" data-code="' + code + '" data-ver="' + eid + '" aria-label="Aggiungi una copia">+</button></div></div>';
+  var CM_URL = 'https://www.cardmarket.com/it/OnePiece/Products/Search?searchString=';
+
+  // Version ids of a card in catalog order (Base first), unknown ids last.
+  function tradeIds(c){
+    var vs = variantsOf(c.code).map(function(v){ return String(v[0]); });
+    return Object.keys(c.trade).sort(function(a, b){
+      var x = vs.indexOf(a), y = vs.indexOf(b);
+      return (x < 0 ? 99 : x) - (y < 0 ? 99 : y);
     });
-    var rest = variantsOf(c.code).filter(function(v){ return !c.trade.hasOwnProperty(String(v[0])); });
-    if(rest.length){
-      h += '<select class="sel" data-trade-add="' + code + '" aria-label="Aggiungi una versione"><option value="">+ Aggiungi versione</option>'
-        + rest.map(function(v){ return '<option value="' + escapeHtml(String(v[0])) + '">' + escapeHtml(v[1]) + '</option>'; }).join('') + '</select>';
+  }
+
+  // One tile per card version in the binder: cover with the copies badge, name, version selector (picking another
+  // version moves the copies there "m:", or adds it as a separate tile "a:"), copies buttons, Cardmarket link.
+  function tradeEntryHtml(c, id){
+    var code = escapeHtml(c.code), eid = escapeHtml(id), n = c.trade[id];
+    var img = id === '0' ? imgFor(c.code) : tcgImg(id, 400);
+    var others = variantsOf(c.code).filter(function(v){ return !c.trade.hasOwnProperty(String(v[0])); });
+    function opts(prefix){
+      return others.map(function(v){ return '<option value="' + prefix + escapeHtml(String(v[0])) + '">' + escapeHtml(v[1]) + '</option>'; }).join('');
     }
-    return h + '</div>';
+    return '<div class="trade-entry"><div class="art" data-detail="' + code + '">'
+      + (img ? '<img src="' + img + '" alt="" loading="lazy" referrerpolicy="no-referrer">' : '')
+      + '<span class="copies-badge">×' + n + '</span></div>'
+      + '<div class="trade-info"><span class="trade-vlabel">' + code + '</span><span class="name" data-detail="' + code + '">' + escapeHtml(c.name) + '</span></div>'
+      + '<select class="sel" data-trade-version="' + code + '" data-ver="' + eid + '" aria-label="Versione"><option value="">' + escapeHtml(versionLabel(c.code, id)) + '</option>'
+      + (others.length ? '<optgroup label="Cambia versione">' + opts('m:') + '</optgroup><optgroup label="Aggiungi una scheda">' + opts('a:') + '</optgroup>' : '') + '</select>'
+      + '<div class="stepper"><button data-trade-step="-1" data-code="' + code + '" data-ver="' + eid + '" aria-label="Togli una copia">−</button>'
+      + '<button data-trade-step="1" data-code="' + code + '" data-ver="' + eid + '" aria-label="Aggiungi una copia">+</button></div>'
+      + '<a class="btn cm-link" href="' + CM_URL + encodeURIComponent(c.code) + '" target="_blank" rel="noopener noreferrer">Cardmarket ↗</a></div>';
   }
 
   // Flat list sorted by code, filtered by the search box (the binder is searched by code or name).
@@ -1226,7 +1233,9 @@ OP01-003 | Nami | OP-01 Romance Dawn | C"></textarea>
       container.innerHTML = '<div class="empty-state"><p>Nessuna carta degli scambi corrisponde alla ricerca.</p></div>';
       return;
     }
-    container.innerHTML = '<div class="trade-list">' + items.map(tradeCardHtml).join('') + '</div>';
+    var entries = '';
+    items.forEach(function(c){ tradeIds(c).forEach(function(id){ entries += tradeEntryHtml(c, id); }); });
+    container.innerHTML = '<div class="trade-gal">' + entries + '</div>';
   }
 
   // ---- STATISTICS ----
@@ -1599,13 +1608,15 @@ OP01-003 | Nami | OP-01 Romance Dawn | C"></textarea>
   });
   document.addEventListener('click', function(e){ if(!e.target.closest('#more-btn, #more-menu')) closeMore(); });
 
-  // Trade list: adding a version from the select (1 copy).
+  // Trade list: the version selector of a tile. "m:" moves the copies to that version, "a:" adds it as a separate tile (1 copy).
   document.getElementById('list-container').addEventListener('change', function(e){
-    var sel = e.target.closest('[data-trade-add]');
+    var sel = e.target.closest('[data-trade-version]');
     if(!sel || !sel.value) return;
-    var tc = findCard(sel.getAttribute('data-trade-add'));
+    var tc = findCard(sel.getAttribute('data-trade-version'));
     if(!tc) return;
-    L.setTradeCopies(tc, sel.value, 1, Date.now());
+    var to = sel.value.slice(2);
+    if(sel.value.charAt(0) === 'm') L.moveTradeVersion(tc, sel.getAttribute('data-ver'), to, Date.now());
+    else L.setTradeCopies(tc, to, 1, Date.now());
     scheduleSave();
     renderList();
   });
