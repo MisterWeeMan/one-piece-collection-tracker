@@ -26,6 +26,7 @@ A static web app to track a One Piece TCG (trading card game) collection: checkl
 - `tests/*.test.js`: `node --test` suites (`cards`, `merge`, `decks`) using Node's built-in runner, no dependency. The old `scripts/check-deck-parser.mjs` was replaced by `tests/decks.test.js`.
 - `card-catalog.json` (~570 KB, one line): generated, do not hand-edit. Per card code: structured data and the list of versions with the TCGplayer product id used for images. Loaded by the app with `fetch`; if missing the detail dialog still works without images.
 - `scripts/build-catalog.mjs`: regenerates the catalog from https://tcgcsv.com (daily mirror of the TCGplayer API). Run with `node scripts/build-catalog.mjs` (Node 18+) when a new set comes out, then commit `card-catalog.json` together with `index.html`. It sets a descriptive User-Agent (the service rejects Node's default with 401) and waits between requests: keep both. Card effect text is deliberately not copied.
+- `.github/workflows/update-catalog.yml`: every night at 02:00 UTC (and on demand from the Actions tab) runs `build-catalog.mjs`, then `scripts/check-catalog.mjs` (refuses a catalog with lost codes, fewer versions, bad ids or fewer than 1000 codes), and commits `card-catalog.json` straight to `main` only if its content changed (`generatedAt` is ignored). The bot's commits mean `main` can be ahead of the local copy: `git pull` before committing. If the check fails the run goes red and nothing is committed.
 - `.gitignore` ignores `.claude/` (local Claude Code settings).
 
 ## Run and test

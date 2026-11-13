@@ -1,0 +1,52 @@
+name: Update card catalog
+
+# Every night at 02:00 UTC (and on demand from the Actions tab) regenerates card-catalog.json
+# and commits it to main only if the content changed and the sanity checks pass.
+on:
+  schedule:
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: update-catalog
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Keep the current catalog for comparison
+        run: git show HEAD:card-catalog.json > "$RUNNER_TEMP/old.json"
+
+      # build-catalog.mjs throws on any failed request and writes the file only at the very end.
+      - name: Build catalog
+        run: node scripts/build-catalog.mjs
+
+      - name: Check the new catalog
+        run: node scripts/check-catalog.mjs card-catalog.json "$RUNNER_TEMP/old.json"
+
+      - name: Commit and push if changed
+        run: |
+          # generatedAt changes every day: compare the content without it.
+          if node -e "
+            const fs = require('fs');
+            const strip = p => { const j = JSON.parse(fs.readFileSync(p, 'utf8')); delete j.generatedAt; return JSON.stringify(j); };
+            process.exit(strip('card-catalog.json') === strip(process.argv[1]) ? 0 : 1);
+          " "$RUNNER_TEMP/old.json"; then
+            echo 'No changes in the catalog.'
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add card-catalog.json
+          git commit -m 'Update card catalog (automatic)'
+          git pull --rebase
+          git push
