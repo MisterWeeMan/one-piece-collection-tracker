@@ -1662,7 +1662,9 @@ OP01-003 | Nami | OP-01 Romance Dawn | C"></textarea>
   function loadCatalog(){
     if(catalog) return Promise.resolve(catalog);
     if(!catalogPromise){
-      catalogPromise = fetch(CATALOG_URL).then(function(res){
+      // no-cache: revalidate with the server on every load (cheap 304 if unchanged), so a stale browser copy
+      // of the nightly-updated catalog never hides new cards or images.
+      catalogPromise = fetch(CATALOG_URL, { cache: 'no-cache' }).then(function(res){
         if(!res.ok) throw new Error('catalogo non disponibile');
         return res.json();
       }).then(function(data){

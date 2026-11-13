@@ -12,7 +12,7 @@ Ogni capitolo fa provare una funzione nuova di Claude Code su un lavoro vero del
   2. cosa ha sbagliato;
   3. cosa hai dovuto controllare tu.
 - Le regole del progetto (in `CLAUDE.md`) valgono anche qui: solo `main`, nessuna PR, ogni funzione deve funzionare su PC e telefono, niente dipendenze o build step non richiesti.
-- Le funzioni dell'app usate come esercizio vengono dalle 5 idee discusse: aggiunta veloce per codice, ricerca e filtri, grafico della storia, backup ed esportazione, valore della collezione.
+- Le funzioni dell'app usate come esercizio vengono dalle 4 idee discusse: aggiunta veloce per codice, ricerca e filtri, grafico della storia, backup ed esportazione.
 
 **Prima di iniziare ogni capitolo**: chiedi a Claude di verificare che la funzione sia disponibile nel tuo piano e sul tuo PC. Non è stato ancora controllato per: Action con Claude, task in cloud, Firebase MCP.
 
