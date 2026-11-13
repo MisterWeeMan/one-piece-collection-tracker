@@ -592,7 +592,7 @@ OP01-003 | Nami | OP-01 Romance Dawn | C"></textarea>
   // deleted: { CODE: timestamp } are the tombstones of deleted cards (without them a deletion
   // would be undone by merging with another device); history: { 'YYYY-MM-DD': {t, owned, target} }.
   var meta = { deleted: {}, history: {} };
-  var state = { cards: [], filter: 'all', setFilter: '', rarityFilter: '', categoryFilter: '', search: '', collapsed: {}, view: 'checklist', wishSetFilter: '', wishRarityFilter: '' };
+  var state = { cards: [], filter: 'all', setFilter: '', rarityFilter: '', categoryFilter: '', search: '', searches: {}, collapsed: {}, view: 'checklist', wishSetFilter: '', wishRarityFilter: '' };
 
   // Real chronological order of the sets (card code), newest first.
   // Used to sort the checklist groups automatically: nothing is stored, it is
@@ -1374,7 +1374,11 @@ OP01-003 | Nami | OP-01 Romance Dawn | C"></textarea>
   }
 
   function setView(v){
+    // Each view keeps its own search text: state.search is the one of the current view.
+    state.searches[state.view] = state.search;
     state.view = v;
+    state.search = state.searches[v] || '';
+    document.getElementById('search').value = state.search;
     if(v === 'decks') deckOpenId = null;
     document.querySelectorAll('[data-view]').forEach(function(b){
       var on = b.getAttribute('data-view') === v;
@@ -1395,6 +1399,7 @@ OP01-003 | Nami | OP-01 Romance Dawn | C"></textarea>
     state.filter = 'all'; state.categoryFilter = ''; state.rarityFilter = ''; state.search = '';
     state.setFilter = name;
     document.getElementById('search').value = '';
+    state.searches.checklist = '';
     setView('checklist');
   }
 
