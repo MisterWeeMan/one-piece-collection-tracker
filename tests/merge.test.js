@@ -208,3 +208,9 @@ test('cleanDecks: drops invalid decks and rows', function(){
   assert.deepEqual(c.list[0].cards, [['ZZ01-001', 1], ['ZZ01-004', 3]]);
   assert.deepEqual(c.deleted, { q: 1 });
 });
+
+test('merge: the trade list travels with the card, the newer card wins as a whole', function(){
+  var loc = card('ZZ01-001', 20, { trade: { '111': 2 } }), rem = card('ZZ01-001', 10, { trade: { '111': 1, '222': 1 } });
+  assert.deepEqual(byCode(L.mergeSnapshots(snap([loc]), snap([rem])), 'ZZ01-001').trade, { '111': 2 });
+  assert.deepEqual(byCode(L.mergeSnapshots(snap([rem]), snap([loc])), 'ZZ01-001').trade, { '111': 2 });
+});

@@ -76,6 +76,24 @@
     touch(card, now);
   }
 
+  // The trade list: copies in the binder, kept apart from "owned". The "trade" key is
+  // { versionId: copies } and exists only while the card is in the list.
+  function toggleTrade(card, versionId, now){
+    if(card.trade){ delete card.trade; }
+    else { card.trade = {}; card.trade[versionId] = 1; }
+    touch(card, now);
+  }
+
+  // Sets the copies of one version (also adds it); zero or less removes it, and the card
+  // leaves the list when no version is left.
+  function setTradeCopies(card, versionId, copies, now){
+    var t = card.trade || (card.trade = {});
+    copies = Math.floor(copies);
+    if(copies > 0) t[versionId] = copies; else delete t[versionId];
+    if(!Object.keys(t).length) delete card.trade;
+    touch(card, now);
+  }
+
   // ---- METADATA AND HISTORY ----
   function cleanMeta(m){
     m = m && typeof m === 'object' ? m : {};
@@ -357,7 +375,7 @@
   var OPLogic = {
     target: target, normalizeCode: normalizeCode, clampOwned: clampOwned,
     upsertCard: upsertCard, deleteCard: deleteCard, tombstoneAll: tombstoneAll,
-    toggleOwned: toggleOwned, toggleWish: toggleWish,
+    toggleOwned: toggleOwned, toggleWish: toggleWish, toggleTrade: toggleTrade, setTradeCopies: setTradeCopies,
     cleanMeta: cleanMeta, cleanSnapshot: cleanSnapshot, recordSnapshot: recordSnapshot,
     mergeSnapshots: mergeSnapshots, canonSnapshot: canonSnapshot,
     parseDeck: parseDeck, decodeOplayDeck: decodeOplayDeck,

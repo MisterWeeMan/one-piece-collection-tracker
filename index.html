@@ -128,7 +128,9 @@
   .art img{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; display:block; }
   .art img.broken{ display:none; }
   .art .ac{ position:relative; font:12px var(--font-mono); color:var(--text-muted); background:rgba(9,21,34,.78); padding:2px 8px; border-radius:6px; }
-  .art .wish-btn{ position:absolute; top:6px; right:6px; width:40px; height:40px; margin:0; border-radius:50%; background:rgba(9,21,34,.78); }
+  .art .wish-btn, .art .trade-btn{ position:absolute; top:6px; width:40px; height:40px; margin:0; border-radius:50%; background:rgba(9,21,34,.78); }
+  .art .wish-btn{ right:6px; }
+  .art .trade-btn{ left:6px; }
   .meta{ padding:0 4px 4px; display:flex; flex-direction:column; gap:8px; min-width:0; }
   .name{ white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-size:14.5px; }
   .name[data-detail]{ cursor:pointer; }
@@ -154,14 +156,29 @@
   .square svg{ width:14px; height:14px; opacity:0; }
   .square.filled svg{ opacity:1; }
 
-  /* WISHLIST */
-  .wish-btn{
+  /* WISHLIST (the trade button shares the look of the star) */
+  .wish-btn, .trade-btn{
     flex-shrink:0; width: 28px; height: 28px; padding:0; border:none; background:transparent; color: var(--text-muted);
     display:flex; align-items:center; justify-content:center; align-self:center; margin: -4px -4px -4px 0;
   }
-  .wish-btn svg{ width:20px; height:20px; fill:none; stroke: currentColor; stroke-width: 2; stroke-linejoin: round; }
-  .wish-btn.active{ color: var(--gold); }
+  .wish-btn svg, .trade-btn svg{ width:20px; height:20px; fill:none; stroke: currentColor; stroke-width: 2; stroke-linejoin: round; }
+  .wish-btn.active, .trade-btn.active{ color: var(--gold); }
   .wish-btn.active svg{ fill: currentColor; }
+  .trade-btn.active svg{ stroke-width: 2.8; }
+
+  /* TRADE LIST: one panel per card, one row per version in the binder */
+  .trade-list{ display:grid; grid-template-columns:repeat(auto-fill, minmax(min(100%, 300px), 1fr)); gap:16px; align-items:start; }
+  .trade-card{ background:var(--panel); border:1px solid var(--border); border-radius:12px; padding:12px; display:flex; flex-direction:column; gap:10px; min-width:0; }
+  .trade-head{ display:flex; align-items:center; gap:8px; min-width:0; }
+  .trade-head .name{ flex:1; min-width:0; }
+  .trade-row{ display:flex; align-items:center; gap:12px; }
+  .trade-thumb{ position:relative; width:48px; aspect-ratio:600 / 838; flex-shrink:0; border-radius:6px; overflow:hidden; cursor:pointer; background:repeating-linear-gradient(135deg, #17334B 0 10px, #143049 10px 20px); }
+  .trade-thumb img{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; display:block; }
+  .trade-thumb img.broken{ display:none; }
+  .trade-ver{ flex:1; min-width:0; font-size:13.5px; }
+  .stepper{ display:flex; align-items:center; gap:6px; }
+  .stepper button{ width:40px; height:40px; border-radius:10px; border:1px solid var(--border); background:var(--panel-2); color:var(--text); font-size:20px; line-height:1; padding:0; }
+  .stepper b{ min-width:24px; text-align:center; font-variant-numeric:tabular-nums; }
 
   /* STATISTICS */
   .stats-list{ display:grid; grid-template-columns:repeat(auto-fit, minmax(min(100%, 420px), 1fr)); gap:16px; align-items:start; }
@@ -359,6 +376,11 @@
     .nb.on .lbl{ display:inline; }
     .nb .count{ position:absolute; top:2px; right:0; background:var(--gold); color:#2B2107; font-weight:700; }
     .nb.on .count{ display:none; }
+    /* "Altro": small menu above the bar with the less used sections */
+    .more-menu{ position:absolute; right:0; bottom:calc(100% + 10px); display:flex; flex-direction:column; gap:2px; min-width:200px; padding:6px; border-radius:18px; background:var(--bar); border:1px solid var(--border); box-shadow:0 8px 24px rgba(0,0,0,.5); }
+    .more-menu[hidden]{ display:none; }
+    .mi{ display:flex; align-items:center; gap:10px; height:48px; padding:0 14px; border:0; border-radius:12px; background:none; color:var(--text); font-weight:600; font-size:14.5px; text-align:left; }
+    .mi.on{ background:var(--gold); color:#2B2107; }
   }
 </style>
 </head>
@@ -384,6 +406,7 @@
       <button class="sw" data-view="wishlist"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.9 6.8 19.6l1-5.8L3.5 9.7l5.9-.9z"/></svg>Desideri<span class="count wish-count"></span></button>
       <button class="sw" data-view="stats"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 20V11M12 20V4M19 20v-6"/></svg>Statistiche</button>
       <button class="sw" data-view="decks"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="7" width="13" height="13.5" rx="2"/><path d="M7.5 4h11a2 2 0 0 1 2 2v11"/></svg>Mazzi</button>
+      <button class="sw" data-view="trades"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8h14M14 4l4 4-4 4M20 16H6M10 12l-4 4 4 4"/></svg>Scambi</button>
     </nav>
     <div class="tools">
       <button class="ibtn" data-view="settings" aria-label="Impostazioni"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 3v2.5M12 18.5V21M3 12h2.5M18.5 12H21M5.6 5.6l1.8 1.8M16.6 16.6l1.8 1.8M5.6 18.4l1.8-1.8M16.6 7.4l1.8-1.8"/></svg></button>
@@ -490,9 +513,13 @@ OP01-003 | Nami | OP-01 Romance Dawn | C"></textarea>
   <nav class="bnav" aria-label="Sezioni">
     <button class="nb on" data-view="checklist" aria-label="Checklist"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6h11M9 12h11M9 18h11"/><path d="M3.5 6.5l1.5 1.5 2.5-3M3.5 12.5l1.5 1.5 2.5-3M3.5 18.5l1.5 1.5 2.5-3"/></svg><span class="lbl">Checklist</span></button>
     <button class="nb" data-view="wishlist" aria-label="Desideri"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.9 6.8 19.6l1-5.8L3.5 9.7l5.9-.9z"/></svg><span class="lbl">Desideri</span><span class="count wish-count"></span></button>
-    <button class="nb" data-view="stats" aria-label="Statistiche"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 20V11M12 20V4M19 20v-6"/></svg><span class="lbl">Statistiche</span></button>
     <button class="nb" data-view="decks" aria-label="Mazzi"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="7" width="13" height="13.5" rx="2"/><path d="M7.5 4h11a2 2 0 0 1 2 2v11"/></svg><span class="lbl">Mazzi</span></button>
-    <button class="nb" data-view="settings" aria-label="Impostazioni"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 3v2.5M12 18.5V21M3 12h2.5M18.5 12H21M5.6 5.6l1.8 1.8M16.6 16.6l1.8 1.8M5.6 18.4l1.8-1.8M16.6 7.4l1.8-1.8"/></svg><span class="lbl">Impostazioni</span></button>
+    <button class="nb" data-view="trades" aria-label="Scambi"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8h14M14 4l4 4-4 4M20 16H6M10 12l-4 4 4 4"/></svg><span class="lbl">Scambi</span></button>
+    <button class="nb" id="more-btn" aria-label="Altro" aria-haspopup="true" aria-expanded="false"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></svg><span class="lbl">Altro</span></button>
+    <div class="more-menu" id="more-menu" hidden>
+      <button class="mi" data-view="stats"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 20V11M12 20V4M19 20v-6"/></svg>Statistiche</button>
+      <button class="mi" data-view="settings"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 3v2.5M12 18.5V21M3 12h2.5M18.5 12H21M5.6 5.6l1.8 1.8M16.6 16.6l1.8 1.8M5.6 18.4l1.8-1.8M16.6 7.4l1.8-1.8"/></svg>Impostazioni</button>
+    </div>
   </nav>
 
 </div>
@@ -1049,6 +1076,10 @@ OP01-003 | Nami | OP-01 Romance Dawn | C"></textarea>
       var n = state.cards.filter(function(c){ return c.wishlist; }).length;
       title = 'Desideri';
       count = n ? n + (n === 1 ? ' carta' : ' carte') : '';
+    } else if(state.view === 'trades'){
+      var nt = state.cards.filter(function(c){ return c.trade; }).length;
+      title = 'Scambi';
+      count = nt ? nt + (nt === 1 ? ' carta' : ' carte') : '';
     } else if(state.view === 'decks'){
       title = 'Mazzi';
       count = decks.list.length ? decks.list.length + (decks.list.length === 1 ? ' mazzo' : ' mazzi') : '';
@@ -1137,6 +1168,65 @@ OP01-003 | Nami | OP-01 Romance Dawn | C"></textarea>
     document.getElementById('wish-filters').style.display = wishCards.length ? '' : 'none';
     document.getElementById('wish-set-filter').classList.toggle('on', !!state.wishSetFilter);
     document.getElementById('wish-rarity-filter').classList.toggle('on', !!state.wishRarityFilter);
+  }
+
+  // ---- TRADE LIST ----
+  // Cards in the binder taken to a tournament. card.trade = { versionId: copies }, apart from "owned" (see logic.js).
+  function tradeBtn(c){
+    var on = !!c.trade;
+    return '<button class="trade-btn' + (on ? ' active' : '') + '" data-trade="' + escapeHtml(c.code) + '" aria-pressed="' + (on ? 'true' : 'false') + '" aria-label="' + (on ? 'Togli dagli scambi' : 'Aggiungi agli scambi') + '">'
+      + '<svg viewBox="0 0 24 24"><path d="M4 8h14M14 4l4 4-4 4M20 16H6M10 12l-4 4 4 4"/></svg></button>';
+  }
+
+  function variantsOf(code){ var e = catalog && catalog[code]; return (e && e.variants) || []; }
+
+  // shortcut: version id "0" = catalog not available when the card entered the list; shown as "Base" without a
+  // cover, and the real versions can still be added from the Scambi page once the catalog loads.
+  function versionLabel(code, id){
+    var v = variantsOf(code).filter(function(x){ return String(x[0]) === id; })[0];
+    return v ? v[1] : (id === '0' ? 'Base' : 'Versione ' + id);
+  }
+
+  function tradeCardHtml(c){
+    var code = escapeHtml(c.code);
+    var h = '<div class="trade-card"><div class="trade-head"><span class="card-code">' + code + '</span>'
+      + '<span class="name" data-detail="' + code + '">' + escapeHtml(c.name) + '</span>';
+    if(c.rarity) h += '<span class="rarity-pill ' + rarityClass(c.rarity) + '">' + escapeHtml(c.rarity) + '</span>';
+    h += '</div>';
+    Object.keys(c.trade).forEach(function(id){
+      var img = id === '0' ? imgFor(c.code) : tcgImg(id, 200), eid = escapeHtml(id);
+      h += '<div class="trade-row"><div class="trade-thumb" data-detail="' + code + '">'
+        + (img ? '<img src="' + img + '" alt="" loading="lazy" referrerpolicy="no-referrer">' : '') + '</div>'
+        + '<span class="trade-ver">' + escapeHtml(versionLabel(c.code, id)) + '</span>'
+        + '<div class="stepper"><button data-trade-step="-1" data-code="' + code + '" data-ver="' + eid + '" aria-label="Togli una copia">\u2212</button>'
+        + '<b>' + c.trade[id] + '</b>'
+        + '<button data-trade-step="1" data-code="' + code + '" data-ver="' + eid + '" aria-label="Aggiungi una copia">+</button></div></div>';
+    });
+    var rest = variantsOf(c.code).filter(function(v){ return !c.trade.hasOwnProperty(String(v[0])); });
+    if(rest.length){
+      h += '<select class="sel" data-trade-add="' + code + '" aria-label="Aggiungi una versione"><option value="">+ Aggiungi versione</option>'
+        + rest.map(function(v){ return '<option value="' + escapeHtml(String(v[0])) + '">' + escapeHtml(v[1]) + '</option>'; }).join('') + '</select>';
+    }
+    return h + '</div>';
+  }
+
+  // Flat list sorted by code, filtered by the search box (the binder is searched by code or name).
+  function renderTrades(){
+    var container = document.getElementById('list-container');
+    var q = state.search.trim().toLowerCase();
+    var all = state.cards.filter(function(c){ return c.trade; });
+    if(all.length === 0){
+      container.innerHTML = '<div class="empty-state"><p><b>La lista degli scambi è vuota.</b></p>'
+        + '<p>Tocca il bottone con le frecce su una carta della checklist per aggiungerla qui.</p></div>';
+      return;
+    }
+    var items = all.filter(function(c){ return !q || (c.code + ' ' + c.name).toLowerCase().indexOf(q) !== -1; })
+      .sort(function(a, b){ return a.code.localeCompare(b.code); });
+    if(items.length === 0){
+      container.innerHTML = '<div class="empty-state"><p>Nessuna carta degli scambi corrisponde alla ricerca.</p></div>';
+      return;
+    }
+    container.innerHTML = '<div class="trade-list">' + items.map(tradeCardHtml).join('') + '</div>';
   }
 
   // ---- STATISTICS ----
@@ -1291,7 +1381,9 @@ OP01-003 | Nami | OP-01 Romance Dawn | C"></textarea>
       b.classList.toggle('on', on);
       if(on) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current');
     });
-    ['checklist', 'wishlist', 'stats', 'decks', 'settings'].forEach(function(n){ document.body.classList.toggle('view-' + n, n === v); });
+    ['checklist', 'wishlist', 'trades', 'stats', 'decks', 'settings'].forEach(function(n){ document.body.classList.toggle('view-' + n, n === v); });
+    closeMore();
+    document.getElementById('more-btn').classList.toggle('on', v === 'stats' || v === 'settings');
     closeSheet();
     renderRail();
     renderList();
@@ -1372,7 +1464,7 @@ OP01-003 | Nami | OP-01 Romance Dawn | C"></textarea>
     var h = '<div class="tile' + (c.owned >= t ? ' complete' : '') + '" data-code="' + code + '">';
     h += '<div class="art" data-detail="' + code + '">';
     if(img) h += '<img src="' + img + '" alt="" loading="lazy" referrerpolicy="no-referrer">';
-    h += '<span class="ac">' + code + '</span>' + wishBtn(c) + '</div>';
+    h += '<span class="ac">' + code + '</span>' + wishBtn(c) + tradeBtn(c) + '</div>';
     h += '<div class="meta"><span class="name" data-detail="' + code + '">' + escapeHtml(c.name) + '</span><div class="r2">';
     if(c.rarity) h += '<span class="rarity-pill ' + rarityClass(c.rarity) + '">' + escapeHtml(c.rarity) + '</span>';
     if(c.leader) h += '<span class="leader-pill">Leader</span>';
@@ -1388,6 +1480,7 @@ OP01-003 | Nami | OP-01 Romance Dawn | C"></textarea>
     markFilters();
     if(state.view === 'settings') return;
     if(state.view === 'wishlist'){ renderWishlist(); return; }
+    if(state.view === 'trades'){ renderTrades(); return; }
     if(state.view === 'decks'){ renderDecks(); return; }
     if(state.view === 'stats'){ renderStats(); return; }
     var container = document.getElementById('list-container');
@@ -1489,6 +1582,29 @@ OP01-003 | Nami | OP-01 Romance Dawn | C"></textarea>
     if(e.target.tagName === 'IMG') e.target.classList.add('broken');
   }, true);
 
+  // Phone "Altro" menu (Statistiche, Impostazioni): opens on tap, closes on a choice or a tap outside.
+  function closeMore(){
+    document.getElementById('more-menu').hidden = true;
+    document.getElementById('more-btn').setAttribute('aria-expanded', 'false');
+  }
+  document.getElementById('more-btn').addEventListener('click', function(){
+    var menu = document.getElementById('more-menu');
+    menu.hidden = !menu.hidden;
+    this.setAttribute('aria-expanded', menu.hidden ? 'false' : 'true');
+  });
+  document.addEventListener('click', function(e){ if(!e.target.closest('#more-btn, #more-menu')) closeMore(); });
+
+  // Trade list: adding a version from the select (1 copy).
+  document.getElementById('list-container').addEventListener('change', function(e){
+    var sel = e.target.closest('[data-trade-add]');
+    if(!sel || !sel.value) return;
+    var tc = findCard(sel.getAttribute('data-trade-add'));
+    if(!tc) return;
+    L.setTradeCopies(tc, sel.value, 1, Date.now());
+    scheduleSave();
+    renderList();
+  });
+
   document.getElementById('list-container').addEventListener('click', function(e){
     var deckOpen = e.target.closest('[data-deck-open]');
     if(deckOpen){ deckOpenId = deckOpen.getAttribute('data-deck-open'); renderDecks(); window.scrollTo(0, 0); return; }
@@ -1498,6 +1614,30 @@ OP01-003 | Nami | OP-01 Romance Dawn | C"></textarea>
     if(e.target.closest('[data-deck-delete]')){ deleteDeck(); return; }
     var goto = e.target.closest('[data-goto-set]');
     if(goto){ goToSet(goto.getAttribute('data-goto-set')); return; }
+    // The binder button on a tile: the card enters the trade list with the first catalog version, 1 copy.
+    var trade = e.target.closest('.trade-btn');
+    if(trade){
+      var tcard = findCard(trade.getAttribute('data-trade'));
+      if(tcard) loadCatalog().then(function(cat){
+        var vs = cat[tcard.code] && cat[tcard.code].variants;
+        L.toggleTrade(tcard, vs && vs[0] ? String(vs[0][0]) : '0', Date.now());
+        scheduleSave();
+        trade.classList.toggle('active', !!tcard.trade);
+        trade.setAttribute('aria-pressed', tcard.trade ? 'true' : 'false');
+        trade.setAttribute('aria-label', tcard.trade ? 'Togli dagli scambi' : 'Aggiungi agli scambi');
+      });
+      return;
+    }
+    var step = e.target.closest('[data-trade-step]');
+    if(step){
+      var scard = findCard(step.getAttribute('data-code')), ver = step.getAttribute('data-ver');
+      if(scard && scard.trade){
+        L.setTradeCopies(scard, ver, (scard.trade[ver] || 0) + parseInt(step.getAttribute('data-trade-step'), 10), Date.now());
+        scheduleSave();
+        renderList();
+      }
+      return;
+    }
     var wish = e.target.closest('.wish-btn');
     if(wish){
       var wc = findCard(wish.getAttribute('data-wish'));
@@ -1718,6 +1858,7 @@ OP01-003 | Nami | OP-01 Romance Dawn | C"></textarea>
     detailRow(dl, 'Set', card.set);
     detailRow(dl, 'Copie', Math.min(card.owned || 0, t) + ' / ' + t);
     if(card.wishlist) detailRow(dl, 'Desideri', 'Sì');
+    if(card.trade) detailRow(dl, 'Scambi', Object.keys(card.trade).reduce(function(n, k){ return n + card.trade[k]; }, 0) + ' in album');
     if(!entry) return;
     detailRow(dl, 'Tipo', TYPE_IT[entry.type] || entry.type);
     detailRow(dl, 'Colore', entry.color && entry.color.split(';').map(function(c){ return COLOR_IT[c] || c; }).join(' / '));
@@ -1890,7 +2031,7 @@ OP01-003 | Nami | OP-01 Romance Dawn | C"></textarea>
     document.getElementById('catalog-info').textContent = n
       ? n.toLocaleString('it-IT') + ' codici' + (d && !isNaN(d) ? ' · aggiornato il ' + d.toLocaleDateString('it-IT', { day: 'numeric', month: 'long', year: 'numeric' }) : '')
       : 'non disponibile';
-    if(state.view === 'checklist' || state.view === 'decks') renderList();
+    if(state.view === 'checklist' || state.view === 'decks' || state.view === 'trades') renderList();
   });
   // Cleanup of the old Gist sync: the token is no longer needed and must not stay in clear text in the browser.
   localStorage.removeItem('op-gh-token');

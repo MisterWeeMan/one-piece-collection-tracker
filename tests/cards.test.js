@@ -94,6 +94,33 @@ test('toggleWish: the wishlist key exists only when active, never false', functi
   assert.equal(c.updatedAt, 6);
 });
 
+// ---- trade list (copies in the binder, separate from "owned") ----
+test('toggleTrade: first tap adds the given version with 1 copy, second tap removes the key; owned untouched', function(){
+  var c = { code: 'ZZ01-001', owned: 2 };
+  L.toggleTrade(c, '111', 5);
+  assert.deepEqual(c.trade, { '111': 1 });
+  assert.equal(c.updatedAt, 5);
+  assert.equal(c.owned, 2);
+  L.toggleTrade(c, '111', 6);
+  assert.equal('trade' in c, false);
+  assert.equal(c.updatedAt, 6);
+  assert.equal(c.owned, 2);
+});
+
+test('setTradeCopies: sets or adds a version; 0 removes it and the last one takes the card out of the list', function(){
+  var c = { code: 'ZZ01-001', owned: 0 };
+  L.toggleTrade(c, '111', 5);
+  L.setTradeCopies(c, '111', 3, 6);
+  L.setTradeCopies(c, '222', 1, 7);
+  assert.deepEqual(c.trade, { '111': 3, '222': 1 });
+  assert.equal(c.updatedAt, 7);
+  L.setTradeCopies(c, '111', 0, 8);
+  assert.deepEqual(c.trade, { '222': 1 });
+  L.setTradeCopies(c, '222', 0, 9);
+  assert.equal('trade' in c, false);
+  assert.equal(c.updatedAt, 9);
+});
+
 // ---- history ----
 var DAY = new Date(2026, 0, 5, 12, 0, 0).getTime(); // 5 January 2026, local time
 
