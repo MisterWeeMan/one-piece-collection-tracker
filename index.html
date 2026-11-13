@@ -2042,6 +2042,10 @@ OP01-003 | Nami | OP-01 Romance Dawn | C"></textarea>
   });
 })();
 </script>
+<script>
+// Offline copy of the app files (see sw.js).
+if('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');
+</script>
 <script type="module">
   // The Firebase config is not a secret: access to the data is protected by the Firestore rules
   // (everyone reads and writes only users/<own uid>/...).
