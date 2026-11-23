@@ -216,3 +216,17 @@ test('parseBulk + upsertCard: importing the same text twice neither duplicates n
   assert.equal(cards.length, 2);
   assert.deepEqual(cards.map(function(c){ return c.updatedAt; }), [100, 100]);
 });
+
+test('missingByRarity: missing copies per set and rarity, complete cards left out', function(){
+  var cards = [
+    { code: 'ZZ01-001', set: 'Set Finto', rarity: 'L', leader: true, owned: 0 },   // leader target 1 -> 1 missing
+    { code: 'ZZ01-002', set: 'Set Finto', rarity: 'SR', leader: false, owned: 1 }, // 3 missing
+    { code: 'ZZ01-003', set: 'Set Finto', rarity: 'SR', leader: false, owned: 4 }, // complete
+    { code: 'ZZ01-004', set: 'Set Finto', rarity: 'C', leader: false, owned: 9 },  // owned above target: still complete
+    { code: 'ZZ02-001', set: 'Altro Set', rarity: '', leader: false, owned: 2 }    // no rarity: 2 missing
+  ];
+  assert.deepEqual(L.missingByRarity(cards), {
+    'Set Finto': { L: 1, SR: 3 },
+    'Altro Set': { '': 2 }
+  });
+});

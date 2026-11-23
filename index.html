@@ -212,14 +212,29 @@
     padding: 9px 11px; margin-top: 6px; color: var(--text);
   }
   .almost-row:first-of-type{ margin-top: 0; }
+  .almost-list{ max-height: 340px; overflow-y: auto; padding-right: 4px; }
+  .pie-wrap{ display:flex; flex-wrap:wrap; align-items:center; gap:24px; margin-top:20px; padding-top:20px; border-top:1px solid var(--border); }
+  .pie-wrap svg{ width:160px; height:160px; flex:0 0 auto; }
+  .pie-legend{ flex:1 1 260px; min-width:0; list-style:none; margin:0; padding:0; display:grid; grid-template-columns:repeat(auto-fit, minmax(190px, 1fr)); gap:6px 20px; }
+  .pie-legend li{ display:flex; align-items:center; gap:8px; font-size:12.5px; }
+  .pie-legend i{ width:11px; height:11px; border-radius:3px; flex:0 0 auto; }
+  .pie-legend .pl-name{ flex:1; min-width:0; }
+  .pie-legend .pl-pct{ font-variant-numeric:tabular-nums; }
+  .pie-legend .pl-val{ min-width:56px; text-align:right; color:var(--text-muted); font-size:12px; font-variant-numeric:tabular-nums; }
   .almost-top{ display:flex; justify-content: space-between; gap: 8px; align-items:baseline; margin-bottom: 6px; }
   .almost-name{ font-size: 13px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; min-width:0; }
+  .almost-rar{ margin-top: 6px; font-size: 11.5px; color: var(--text-muted); line-height: 1.4; }
   .almost-missing{ font-size: 12px; color: var(--gold); font-weight: 600; flex-shrink:0; }
   .stats-note{ font-size: 12px; color: var(--text-muted); line-height: 1.5; margin: 8px 0 0; }
   .chart{ width:100%; height:auto; display:block; }
-  .chart-text{ fill: var(--text-muted); font-size: 8px; font-family: var(--font-body); }
+  .chart-text{ fill: var(--text-muted); font-size: 10px; font-family: var(--font-body); }
   .chart-grid{ stroke: var(--border); stroke-width: 0.5; }
-  .chart-line{ fill:none; stroke: var(--gold); stroke-width: 1.6; stroke-linejoin: round; stroke-linecap: round; }
+  .chart-line{ fill:none; stroke: var(--gold); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+  .chart-mark{ fill: var(--bg); stroke: var(--gold); stroke-width: 2; pointer-events: none; }
+  .chart-hit{ fill: transparent; cursor: crosshair; }
+  .chart-tip{ margin: 6px 0 14px; font-size: 13px; color: var(--text); min-height: 20px; }
+  .stat-tiles.t4{ grid-template-columns: repeat(4, 1fr); }
+  @media (max-width: 600px){ .stat-tiles.t4{ grid-template-columns: repeat(2, 1fr); } }
   .chart-area{ fill: var(--gold); opacity: .12; }
   .chart-dot{ fill: var(--gold); }
 
@@ -1241,13 +1256,24 @@ OP01-003 | Nami | OP-01 Romance Dawn | C"></textarea>
   // ---- STATISTICS ----
   var RARITY_ORDER = ['C','UC','R','SR','SEC','L','SP','P'];
   var CATEGORY_LABELS = [['regular','Set regolari'],['deck','Deck'],['memorial','Memorial'],['premium','Premium'],['promo','Promo'],['other','Altro']];
-  var ALMOST_DONE_MAX = 5;
+  // Pie slice colors, one per rarity in RARITY_ORDER plus one for "no rarity" / unknown ones.
+  var PIE_COLORS = ['#8CA3B5', '#6C8EBF', '#4FA79E', '#D8AE55', '#D0665A', '#9B7BC2', '#E08E45', '#C77DA0', '#5E7488'];
 
   function statBucket(){ return { owned: 0, target: 0, cards: 0, complete: 0 }; }
   function statAdd(b, c){
     var t = target(c), o = Math.min(c.owned || 0, t);
     b.owned += o; b.target += t; b.cards++;
     if(o >= t) b.complete++;
+  }
+
+  // Known rarities in RARITY_ORDER, then unknown ones alphabetically, "no rarity" last.
+  function rarityCmp(a, b){
+    if(a === '' || b === '') return a === '' ? 1 : -1;
+    var ia = RARITY_ORDER.indexOf(a), ib = RARITY_ORDER.indexOf(b);
+    if(ia === -1 && ib === -1) return a.localeCompare(b);
+    if(ia === -1) return 1;
+    if(ib === -1) return -1;
+    return ia - ib;
   }
 
   // Aggregates the cards by rarity, product type and set. "Copies" = sum of min(owned, target),
@@ -1266,20 +1292,18 @@ OP01-003 | Nami | OP-01 Romance Dawn | C"></textarea>
     });
     var setNames = Object.keys(bySet);
     var setsComplete = setNames.filter(function(n){ return bySet[n].owned >= bySet[n].target; }).length;
-    var almost = setNames.filter(function(n){ return bySet[n].owned < bySet[n].target; })
+    // Every incomplete set, the closest to completion first.
+    var incomplete = setNames.filter(function(n){ return bySet[n].owned < bySet[n].target; })
       .map(function(n){ var b = bySet[n]; return { name: n, missing: b.target - b.owned, pct: Math.round(b.owned / b.target * 100) }; })
-      .sort(function(a,b){ return a.missing - b.missing || a.name.localeCompare(b.name); })
-      .slice(0, ALMOST_DONE_MAX);
-    var rarityKeys = Object.keys(byRarity).sort(function(a,b){
-      if(a === '' || b === '') return a === '' ? 1 : -1;
-      var ia = RARITY_ORDER.indexOf(a), ib = RARITY_ORDER.indexOf(b);
-      if(ia === -1 && ib === -1) return a.localeCompare(b);
-      if(ia === -1) return 1;
-      if(ib === -1) return -1;
-      return ia - ib;
+      .sort(function(a,b){ return a.missing - b.missing || a.name.localeCompare(b.name); });
+    var rarityKeys = Object.keys(byRarity).sort(rarityCmp);
+    var missing = L.missingByRarity(cards);
+    incomplete.forEach(function(s){
+      s.rarities = Object.keys(missing[s.name] || {}).sort(rarityCmp)
+        .map(function(r){ return (r || '—') + ' ' + missing[s.name][r]; }).join(' · ');
     });
     return { total: total, leaders: leaders, setsTotal: setNames.length, setsComplete: setsComplete,
-             almost: almost, byRarity: byRarity, rarityKeys: rarityKeys, byCategory: byCategory };
+             incomplete: incomplete, byRarity: byRarity, rarityKeys: rarityKeys, byCategory: byCategory };
   }
 
   function pctOf(b){ return b.target > 0 ? Math.round(b.owned / b.target * 100) : 0; }
@@ -1293,38 +1317,99 @@ OP01-003 | Nami | OP-01 Romance Dawn | C"></textarea>
 
   function fmtPct(x){ return x.toFixed(1).replace('.', ','); }
   function fmtDay(key){ return key.slice(8, 10) + '/' + key.slice(5, 7); }
+  function fmtDayFull(key){ return fmtDay(key) + '/' + key.slice(0, 4); }
+  function fmtSigned(n, digits){ return (n >= 0 ? '+' : '') + n.toFixed(digits).replace('.', ','); }
 
-  // Line chart of the completion percentage per day, as inline SVG.
-  // The vertical axis adapts to the data: on 0-100 changes of a few points would be invisible.
-  function historyChart(history){
+  // Pie of the found copies by rarity (the slice = share of all found copies), with a legend that
+  // also keeps the progress of each rarity (found/total) the old "Per rarità" bars used to show.
+  function rarityPie(st){
+    var found = st.total.owned, R = 56, C = 70, a0 = -Math.PI / 2;
+    var svg = '<svg viewBox="0 0 140 140" role="img" aria-label="Copie trovate per rarità">';
+    if(found === 0){
+      svg += '<circle cx="' + C + '" cy="' + C + '" r="' + R + '" fill="var(--panel-2)"/>';
+    }
+    var legend = '';
+    st.rarityKeys.forEach(function(r, i){
+      var b = st.byRarity[r], color = PIE_COLORS[i % PIE_COLORS.length], share = found ? b.owned / found : 0;
+      var label = r || '—', tip = label + ': ' + b.owned + '/' + b.target + ' copie (' + fmtPct(share * 100) + '% delle trovate)';
+      if(share >= 0.9999){
+        svg += '<circle cx="' + C + '" cy="' + C + '" r="' + R + '" fill="' + color + '"><title>' + escapeHtml(tip) + '</title></circle>';
+      } else if(share > 0){
+        var a1 = a0 + share * 2 * Math.PI;
+        svg += '<path d="M' + C + ' ' + C + ' L' + (C + R * Math.cos(a0)).toFixed(2) + ' ' + (C + R * Math.sin(a0)).toFixed(2)
+          + ' A' + R + ' ' + R + ' 0 ' + (share > 0.5 ? 1 : 0) + ' 1 ' + (C + R * Math.cos(a1)).toFixed(2) + ' ' + (C + R * Math.sin(a1)).toFixed(2)
+          + ' Z" fill="' + color + '" stroke="var(--panel)" stroke-width="1.5"><title>' + escapeHtml(tip) + '</title></path>';
+        a0 = a1;
+      }
+      legend += '<li><i style="background:' + color + '"></i><span class="pl-name">' + escapeHtml(label) + '</span>'
+        + '<span class="pl-pct">' + fmtPct(share * 100) + '%</span><span class="pl-val">' + b.owned + '/' + b.target + '</span></li>';
+    });
+    return '<div class="pie-wrap">' + svg + '</svg><ul class="pie-legend">' + legend + '</ul></div>';
+  }
+
+  // Line chart of the completion percentage per day, as inline SVG, sized to the container width.
+  // The vertical axis adapts to the data (on 0-100 changes of a few points would be invisible) and
+  // snaps to round values. Hovering or tapping a column shows that day's numbers under the chart.
+  // shortcut: the X axis is one slot per recorded day (days without changes are not recorded), not calendar time.
+  function historyChart(history, width){
     var days = Object.keys(history).sort().filter(function(d){ return history[d].target > 0; });
     if(days.length < 2){
       return '<p class="stats-note">Lo storico parte da oggi: servono almeno due giorni con modifiche per mostrare l\'andamento.</p>';
     }
+    var n = days.length;
     var pts = days.map(function(d){ return history[d].owned / history[d].target * 100; });
-    var lo = Math.max(0, Math.floor(Math.min.apply(null, pts)) - 2);
-    var hi = Math.min(100, Math.ceil(Math.max.apply(null, pts)) + 2);
-    if(hi - lo < 5) hi = Math.min(100, lo + 5);
-    var W = 320, H = 130, L = 30, R = 8, T = 8, B = 20;
+    var mn = Math.min.apply(null, pts), mx = Math.max.apply(null, pts);
+    var step = [1, 2, 5, 10, 20].filter(function(s){ return (mx - mn) / s <= 3; })[0] || 25;
+    var lo = Math.max(0, Math.floor(mn / step) * step), hi = Math.min(100, Math.ceil(mx / step) * step);
+    if(hi <= lo){ hi = Math.min(100, lo + step); lo = hi - step; }
+    var W = Math.max(300, Math.min(1000, width)), H = W < 500 ? 220 : 300, L = 38, R = 12, T = 12, B = 26;
     var iw = W - L - R, ih = H - T - B;
-    var x = function(i){ return L + (days.length === 1 ? 0 : i / (days.length - 1) * iw); };
+    var x = function(i){ return L + i / (n - 1) * iw; };
     var y = function(v){ return T + (1 - (v - lo) / (hi - lo)) * ih; };
     var line = pts.map(function(v, i){ return (i ? 'L' : 'M') + x(i).toFixed(1) + ' ' + y(v).toFixed(1); }).join(' ');
-    var area = line + ' L' + x(days.length - 1).toFixed(1) + ' ' + (T + ih) + ' L' + x(0).toFixed(1) + ' ' + (T + ih) + ' Z';
+    var area = line + ' L' + x(n - 1).toFixed(1) + ' ' + (T + ih) + ' L' + x(0).toFixed(1) + ' ' + (T + ih) + ' Z';
     var svg = '<svg class="chart" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Andamento del completamento nel tempo">';
-    [lo, hi].forEach(function(v){
+    for(var v = lo; v <= hi; v += step){
       svg += '<line class="chart-grid" x1="' + L + '" x2="' + (W - R) + '" y1="' + y(v).toFixed(1) + '" y2="' + y(v).toFixed(1) + '"/>'
-        + '<text class="chart-text" x="' + (L - 4) + '" y="' + (y(v) + 3).toFixed(1) + '" text-anchor="end">' + Math.round(v) + '%</text>';
-    });
-    svg += '<path class="chart-area" d="' + area + '"/><path class="chart-line" d="' + line + '"/>';
-    if(days.length <= 40){
-      pts.forEach(function(v, i){ svg += '<circle class="chart-dot" cx="' + x(i).toFixed(1) + '" cy="' + y(v).toFixed(1) + '" r="1.8"/>'; });
+        + '<text class="chart-text" x="' + (L - 5) + '" y="' + (y(v) + 3.5).toFixed(1) + '" text-anchor="end">' + v + '%</text>';
     }
-    svg += '<text class="chart-text" x="' + L + '" y="' + (H - 5) + '">' + fmtDay(days[0]) + '</text>'
-      + '<text class="chart-text" x="' + (W - R) + '" y="' + (H - 5) + '" text-anchor="end">' + fmtDay(days[days.length - 1]) + '</text></svg>';
-    var delta = pts[pts.length - 1] - pts[0];
-    return svg + '<p class="stats-note">Dal ' + fmtDay(days[0]) + ': ' + fmtPct(pts[0]) + '% → ' + fmtPct(pts[pts.length - 1]) + '% ('
-      + (delta >= 0 ? '+' : '') + fmtPct(delta) + ' punti).</p>';
+    svg += '<path class="chart-area" d="' + area + '"/><path class="chart-line" d="' + line + '"/>';
+    if(n <= 60){
+      pts.forEach(function(v, i){ svg += '<circle class="chart-dot" cx="' + x(i).toFixed(1) + '" cy="' + y(v).toFixed(1) + '" r="2.4"/>'; });
+    }
+    // Date labels: first and last day plus a few evenly spaced ones in between.
+    var labels = Math.min(n, W < 500 ? 4 : 7);
+    for(var k = 0; k < labels; k++){
+      var li = Math.round(k * (n - 1) / (labels - 1));
+      svg += '<text class="chart-text" x="' + x(li).toFixed(1) + '" y="' + (H - 7) + '" text-anchor="' + (k === 0 ? 'start' : k === labels - 1 ? 'end' : 'middle') + '">' + fmtDay(days[li]) + '</text>';
+    }
+    // Marker plus one invisible hit column per day (it reaches halfway to its neighbours).
+    var tips = days.map(function(d, i){
+      return fmtDayFull(d) + ' · ' + fmtPct(pts[i]) + '% · ' + history[d].owned + '/' + history[d].target + ' copie';
+    });
+    svg += '<circle class="chart-mark" cx="' + x(n - 1).toFixed(1) + '" cy="' + y(pts[n - 1]).toFixed(1) + '" r="4.5"/>';
+    days.forEach(function(d, i){
+      var x0 = i === 0 ? L : (x(i - 1) + x(i)) / 2, x1 = i === n - 1 ? W - R : (x(i) + x(i + 1)) / 2;
+      svg += '<rect class="chart-hit" x="' + x0.toFixed(1) + '" y="' + T + '" width="' + (x1 - x0).toFixed(1) + '" height="' + ih + '"'
+        + ' data-x="' + x(i).toFixed(1) + '" data-y="' + y(pts[i]).toFixed(1) + '" data-tip="' + escapeHtml(tips[i]) + '"/>';
+    });
+    svg += '</svg>';
+
+    // Summary of the whole period. Copies gained are found copies (owned), so a catalog that grows does not distort them.
+    var gained = history[days[n - 1]].owned - history[days[0]].owned;
+    var spanDays = Math.max(1, (Date.parse(days[n - 1]) - Date.parse(days[0])) / 86400000);
+    var bestGain = 0, bestDay = '';
+    for(var j = 1; j < n; j++){
+      var g = history[days[j]].owned - history[days[j - 1]].owned;
+      if(g > bestGain){ bestGain = g; bestDay = days[j]; }
+    }
+    return svg + '<p class="stats-note chart-tip" aria-live="polite">' + escapeHtml(tips[n - 1]) + '</p>'
+      + '<div class="stat-tiles t4">'
+      + '<div class="stat-tile"><b>' + (gained >= 0 ? '+' : '') + gained + '</b><span>copie dal ' + fmtDay(days[0]) + '</span></div>'
+      + '<div class="stat-tile"><b>' + fmtSigned(pts[n - 1] - pts[0], 1) + '</b><span>punti di completamento</span></div>'
+      + '<div class="stat-tile"><b>' + fmtSigned(gained / spanDays * 7, 1) + '</b><span>copie a settimana</span></div>'
+      + '<div class="stat-tile"><b>' + (bestGain ? '+' + bestGain : '—') + '</b><span>' + (bestGain ? 'miglior giorno (' + fmtDay(bestDay) + ')' : 'miglior giorno') + '</span></div>'
+      + '</div>';
   }
 
   function renderStats(){
@@ -1348,7 +1433,7 @@ OP01-003 | Nami | OP-01 Romance Dawn | C"></textarea>
       + '<div class="stat-tile"><b>' + st.total.owned + ' / ' + st.total.target + '</b><span>copie trovate</span></div>'
       + '<div class="stat-tile"><b>' + st.total.cards + '</b><span>carte censite</span></div>'
       + '<div class="stat-tile"><b>' + st.setsTotal + '</b><span>set</span></div>'
-      + '</div></div></div>';
+      + '</div></div>' + rarityPie(st) + '</div>';
 
     html += '<div class="stats-section"><h3>Traguardi</h3><div class="stat-tiles">'
       + '<div class="stat-tile"><b>' + st.setsComplete + '/' + st.setsTotal + '</b><span>Set completi</span></div>'
@@ -1356,28 +1441,27 @@ OP01-003 | Nami | OP-01 Romance Dawn | C"></textarea>
       + '<div class="stat-tile"><b>' + st.leaders.complete + '/' + st.leaders.cards + '</b><span>Leader completi</span></div>'
       + '</div></div>';
 
-    html += '<div class="stats-section"><h3>Set quasi completi</h3>';
-    if(st.almost.length === 0){
+    html += '<div class="stats-section"><h3>Set da completare</h3>';
+    if(st.incomplete.length === 0){
       html += '<p class="stats-note" style="margin:0;">Tutti i set sono completi.</p>';
     } else {
-      st.almost.forEach(function(a){
+      html += '<div class="almost-list">';
+      st.incomplete.forEach(function(a){
         html += '<button class="almost-row" data-goto-set="' + escapeHtml(a.name) + '">'
           + '<div class="almost-top"><span class="almost-name">' + escapeHtml(a.name) + '</span>'
           + '<span class="almost-missing">mancano ' + a.missing + ' · ' + a.pct + '%</span></div>'
-          + '<div class="stat-bar"><div class="stat-fill" style="width:' + a.pct + '%"></div></div></button>';
+          + '<div class="stat-bar"><div class="stat-fill" style="width:' + a.pct + '%"></div></div>'
+          + '<div class="almost-rar">Mancano: ' + escapeHtml(a.rarities) + '</div></button>';
       });
+      html += '</div>';
     }
-    html += '</div>';
-
-    html += '<div class="stats-section"><h3>Per rarità</h3>';
-    st.rarityKeys.forEach(function(r){ html += statRow(r || '—', st.byRarity[r]); });
     html += '</div>';
 
     html += '<div class="stats-section"><h3>Per tipo di prodotto</h3>';
     CATEGORY_LABELS.forEach(function(c){ if(st.byCategory[c[0]]) html += statRow(c[1], st.byCategory[c[0]]); });
     html += '</div>';
 
-    html += '<div class="stats-section"><h3>Andamento</h3>' + historyChart(meta.history) + '</div>';
+    html += '<div class="stats-section stats-wide"><h3>Andamento</h3>' + historyChart(meta.history, container.clientWidth - 44) + '</div>';
     html += '</div>';
     container.innerHTML = html;
   }
@@ -1619,6 +1703,16 @@ OP01-003 | Nami | OP-01 Romance Dawn | C"></textarea>
     else L.setTradeCopies(tc, to, 1, Date.now());
     scheduleSave();
     renderList();
+  });
+
+  // Trend chart readout: hovering (mouse) or tapping (touch) a day moves the marker and shows that day's numbers.
+  document.getElementById('list-container').addEventListener('pointerover', function(e){
+    var hit = e.target.closest('.chart-hit');
+    if(!hit) return;
+    var mark = hit.ownerSVGElement.querySelector('.chart-mark');
+    mark.setAttribute('cx', hit.getAttribute('data-x'));
+    mark.setAttribute('cy', hit.getAttribute('data-y'));
+    hit.ownerSVGElement.parentNode.querySelector('.chart-tip').textContent = hit.getAttribute('data-tip');
   });
 
   document.getElementById('list-container').addEventListener('click', function(e){

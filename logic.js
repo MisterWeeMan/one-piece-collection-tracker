@@ -380,6 +380,19 @@
     return { cards: cards };
   }
 
+  // Missing copies per set and rarity: { set: { rarity: copies } }. Sets and rarities with nothing missing are left out.
+  // Same measure as the header: a card with more copies than its target counts as complete, never as a surplus.
+  function missingByRarity(cards){
+    var out = {};
+    cards.forEach(function(c){
+      var miss = target(c) - Math.min(c.owned || 0, target(c));
+      if(miss <= 0) return;
+      var r = c.rarity || '', set = out[c.set] || (out[c.set] = {});
+      set[r] = (set[r] || 0) + miss;
+    });
+    return out;
+  }
+
   var OPLogic = {
     target: target, normalizeCode: normalizeCode, clampOwned: clampOwned,
     upsertCard: upsertCard, deleteCard: deleteCard, tombstoneAll: tombstoneAll,
@@ -388,7 +401,7 @@
     mergeSnapshots: mergeSnapshots, canonSnapshot: canonSnapshot,
     parseDeck: parseDeck, decodeOplayDeck: decodeOplayDeck,
     cleanDecks: cleanDecks, mergeDecks: mergeDecks, canonDecks: canonDecks, deckStatus: deckStatus,
-    parseBulk: parseBulk
+    parseBulk: parseBulk, missingByRarity: missingByRarity
   };
   if(typeof module !== 'undefined' && module.exports) module.exports = OPLogic;
   else root.OPLogic = OPLogic;
