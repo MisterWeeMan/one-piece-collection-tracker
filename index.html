@@ -184,7 +184,11 @@
   .stats-wide{ grid-column:1 / -1; }
   .stats-section{ background: var(--panel); border: 1px solid var(--border); border-radius: 14px; padding: 18px 20px; min-width:0; }
   .stats-section h3{ margin:0 0 12px; font-size: 16px; font-family: var(--font-display); font-weight: normal; color: var(--gold); }
-  .over{ display:flex; flex-wrap:wrap; align-items:center; gap:24px; }
+  .ov-grid{ display:grid; grid-template-columns:repeat(auto-fit, minmax(min(100%, 380px), 1fr)); gap:28px 36px; }
+  .ov-top{ display:flex; flex-wrap:wrap; align-items:center; justify-content:center; gap:20px; }
+  .ov-top .stat-tiles{ flex:1 1 220px; grid-template-columns:repeat(2, 1fr); }
+  .stats-sub{ margin:22px 0 10px; font-size:12px; font-weight:600; letter-spacing:.05em; text-transform:uppercase; color:var(--text-muted); }
+  .stats-section h3 + .stats-sub, .ov-right .stats-sub{ margin-top:0; }
   .ring{ position:relative; width:140px; height:140px; flex:0 0 auto; }
   .ring svg{ width:140px; height:140px; display:block; }
   .ring .track{ fill:none; stroke:var(--panel-2); stroke-width:12; }
@@ -192,42 +196,39 @@
   .ring .mid{ position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; }
   .ring .mid b{ font:400 32px var(--font-display); }
   .ring .mid small{ color:var(--text-muted); font-size:12px; }
-  .over .sum{ flex:1 1 220px; min-width:0; }
-  .over .big{ margin:0; font:400 22px/1.25 var(--font-display); }
-  .over .sub{ margin:6px 0 0; color:var(--text-muted); }
   .stat-tiles{ display:grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
-  .over .stat-tiles{ flex:1 1 360px; }
   .stat-tile{ background: var(--panel-2); border: 1px solid var(--border); border-radius: 8px; padding: 12px 6px; text-align:center; }
-  .stat-tile b{ display:block; font-family: var(--font-display); font-size: 17px; color: var(--gold); font-weight: normal; }
-  .stat-tile span{ display:block; margin-top: 2px; font-size: 11px; color: var(--text-muted); }
-  .stat-row{ display:grid; grid-template-columns: 78px 1fr auto; align-items:center; gap: 10px; margin-top: 8px; }
+  .stat-tile b{ display:block; font-family: var(--font-display); font-size: 20px; color: var(--gold); font-weight: normal; }
+  .stat-tile span{ display:block; margin-top: 3px; font-size: 12.5px; color: var(--text-muted); }
+  .stat-row{ display:grid; grid-template-columns: 92px 1fr auto; align-items:center; gap: 10px; margin-top: 10px; }
   .stat-row:first-of-type{ margin-top: 0; }
-  .stat-label{ font-size: 12.5px; color: var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .stat-label{ font-size: 14px; color: var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   .stat-bar{ height: 8px; border-radius: 6px; background: var(--panel-2); border: 1px solid var(--border); overflow:hidden; }
   .stat-fill{ height:100%; background: linear-gradient(90deg, var(--gold-dim), var(--gold)); }
   .stat-fill.full{ background: var(--teal); }
-  .stat-val{ font-size: 12px; color: var(--text-muted); font-variant-numeric: tabular-nums; min-width: 52px; text-align:right; }
+  .stat-val{ font-size: 13px; color: var(--text-muted); font-variant-numeric: tabular-nums; min-width: 60px; text-align:right; }
   .almost-row{
     width:100%; display:block; text-align:left; background: var(--panel-2); border: 1px solid var(--border); border-radius: 8px;
-    padding: 9px 11px; margin-top: 6px; color: var(--text);
+    padding: 10px 12px; color: var(--text);
   }
-  .almost-row:first-of-type{ margin-top: 0; }
-  .almost-list{ max-height: 340px; overflow-y: auto; padding-right: 4px; }
-  .pie-wrap{ display:flex; flex-wrap:wrap; align-items:center; gap:24px; margin-top:20px; padding-top:20px; border-top:1px solid var(--border); }
-  .pie-wrap svg{ width:160px; height:160px; flex:0 0 auto; }
-  .pie-legend{ flex:1 1 260px; min-width:0; list-style:none; margin:0; padding:0; display:grid; grid-template-columns:repeat(auto-fit, minmax(190px, 1fr)); gap:6px 20px; }
-  .pie-legend li{ display:flex; align-items:center; gap:8px; font-size:12.5px; }
-  .pie-legend i{ width:11px; height:11px; border-radius:3px; flex:0 0 auto; }
-  .pie-legend .pl-name{ flex:1; min-width:0; }
-  .pie-legend .pl-pct{ font-variant-numeric:tabular-nums; }
-  .pie-legend .pl-val{ min-width:56px; text-align:right; color:var(--text-muted); font-size:12px; font-variant-numeric:tabular-nums; }
-  .almost-top{ display:flex; justify-content: space-between; gap: 8px; align-items:baseline; margin-bottom: 6px; }
-  .almost-name{ font-size: 13px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; min-width:0; }
-  .almost-rar{ margin-top: 6px; font-size: 11.5px; color: var(--text-muted); line-height: 1.4; }
-  .almost-missing{ font-size: 12px; color: var(--gold); font-weight: 600; flex-shrink:0; }
-  .stats-note{ font-size: 12px; color: var(--text-muted); line-height: 1.5; margin: 8px 0 0; }
+  .almost-list{ display:grid; grid-template-columns:repeat(auto-fill, minmax(min(100%, 300px), 1fr)); gap:8px; max-height:380px; overflow-y:auto; padding-right:4px; }
+  .pie-wrap{ display:flex; flex-direction:column; align-items:center; gap:16px; }
+  .pie-wrap svg{ width:180px; height:180px; flex:0 0 auto; }
+  .pie-legend{ width:100%; max-width:360px; border-collapse:collapse; font-size:14px; font-variant-numeric:tabular-nums; }
+  .pie-legend th{ padding:0 0 6px; font-size:12px; font-weight:600; color:var(--text-muted); text-align:right; }
+  .pie-legend th:nth-child(2){ text-align:left; }
+  .pie-legend td{ padding:5px 0; border-top:1px solid var(--border); text-align:right; }
+  .pie-legend td:first-child{ width:20px; }
+  .pie-legend td:nth-child(2){ text-align:left; }
+  .pie-legend i{ display:block; width:12px; height:12px; border-radius:3px; }
+  .pie-legend small{ color:var(--text-muted); font-size:13px; }
+  .almost-top{ display:flex; justify-content: space-between; gap: 8px; align-items:baseline; margin-bottom: 7px; }
+  .almost-name{ font-size: 14px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; min-width:0; }
+  .almost-rar{ margin-top: 7px; font-size: 12.5px; color: var(--text-muted); line-height: 1.4; }
+  .almost-missing{ font-size: 13px; color: var(--gold); font-weight: 600; flex-shrink:0; }
+  .stats-note{ font-size: 13px; color: var(--text-muted); line-height: 1.5; margin: 10px 0 0; }
   .chart{ width:100%; height:auto; display:block; }
-  .chart-text{ fill: var(--text-muted); font-size: 10px; font-family: var(--font-body); }
+  .chart-text{ fill: var(--text-muted); font-size: 11px; font-family: var(--font-body); }
   .chart-grid{ stroke: var(--border); stroke-width: 0.5; }
   .chart-line{ fill:none; stroke: var(--gold); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
   .chart-mark{ fill: var(--bg); stroke: var(--gold); stroke-width: 2; pointer-events: none; }
@@ -1341,10 +1342,11 @@ OP01-003 | Nami | OP-01 Romance Dawn | C"></textarea>
           + ' Z" fill="' + color + '" stroke="var(--panel)" stroke-width="1.5"><title>' + escapeHtml(tip) + '</title></path>';
         a0 = a1;
       }
-      legend += '<li><i style="background:' + color + '"></i><span class="pl-name">' + escapeHtml(label) + '</span>'
-        + '<span class="pl-pct">' + fmtPct(share * 100) + '%</span><span class="pl-val">' + b.owned + '/' + b.target + '</span></li>';
+      legend += '<tr><td><i style="background:' + color + '"></i></td><td>' + escapeHtml(label) + '</td>'
+        + '<td>' + fmtPct(share * 100) + '%</td><td>' + b.owned + '/' + b.target + ' <small>· ' + pctOf(b) + '%</small></td></tr>';
     });
-    return '<div class="pie-wrap">' + svg + '</svg><ul class="pie-legend">' + legend + '</ul></div>';
+    return '<div class="pie-wrap">' + svg + '</svg><table class="pie-legend"><thead><tr><th></th><th>Rarità</th>'
+      + '<th title="Peso della rarità sul totale delle copie trovate">Quota</th><th>Trovate</th></tr></thead><tbody>' + legend + '</tbody></table></div>';
   }
 
   // Line chart of the completion percentage per day, as inline SVG, sized to the container width.
@@ -1423,42 +1425,36 @@ OP01-003 | Nami | OP-01 Romance Dawn | C"></textarea>
     var html = '<div class="stats-list">';
 
     var pct = pctOf(st.total), circ = 351.86;
-    html += '<div class="stats-section stats-wide"><h3>Panoramica</h3><div class="over">'
+    // Overview: left = headline numbers and product types, right = rarity pie. Each number appears once.
+    html += '<div class="stats-section stats-wide"><h3>Panoramica</h3><div class="ov-grid"><div class="ov-left"><div class="ov-top">'
       + '<div class="ring"><svg viewBox="0 0 140 140" aria-hidden="true"><circle class="track" cx="70" cy="70" r="56"/>'
       + '<circle class="val" cx="70" cy="70" r="56" transform="rotate(-90 70 70)" stroke-dasharray="' + (circ * pct / 100).toFixed(1) + ' ' + circ + '"/></svg>'
-      + '<div class="mid"><b>' + pct + '%</b><small>trovate</small></div></div>'
-      + '<div class="sum"><p class="big">La collezione è completa al ' + pct + '%</p>'
-      + '<p class="sub">Mancano ' + (st.total.target - st.total.owned) + ' copie per chiudere tutti i set censiti.</p></div>'
+      + '<div class="mid"><b>' + pct + '%</b><small>completa</small></div></div>'
       + '<div class="stat-tiles">'
-      + '<div class="stat-tile"><b>' + st.total.owned + ' / ' + st.total.target + '</b><span>copie trovate</span></div>'
-      + '<div class="stat-tile"><b>' + st.total.cards + '</b><span>carte censite</span></div>'
-      + '<div class="stat-tile"><b>' + st.setsTotal + '</b><span>set</span></div>'
-      + '</div></div>' + rarityPie(st) + '</div>';
-
-    html += '<div class="stats-section"><h3>Traguardi</h3><div class="stat-tiles">'
-      + '<div class="stat-tile"><b>' + st.setsComplete + '/' + st.setsTotal + '</b><span>Set completi</span></div>'
+      + '<div class="stat-tile"><b>' + st.total.owned + '/' + st.total.target + '</b><span>Copie trovate</span></div>'
       + '<div class="stat-tile"><b>' + st.total.complete + '/' + st.total.cards + '</b><span>Carte complete</span></div>'
+      + '<div class="stat-tile"><b>' + st.setsComplete + '/' + st.setsTotal + '</b><span>Set completi</span></div>'
       + '<div class="stat-tile"><b>' + st.leaders.complete + '/' + st.leaders.cards + '</b><span>Leader completi</span></div>'
-      + '</div></div>';
+      + '</div></div>'
+      + '<p class="stats-note">Mancano ' + (st.total.target - st.total.owned) + ' copie per chiudere tutti i set.</p>'
+      + '<h4 class="stats-sub">Per tipo di prodotto</h4>';
+    CATEGORY_LABELS.forEach(function(c){ if(st.byCategory[c[0]]) html += statRow(c[1], st.byCategory[c[0]]); });
+    html += '</div><div class="ov-right"><h4 class="stats-sub">Rarità delle copie trovate</h4>' + rarityPie(st) + '</div></div></div>';
 
-    html += '<div class="stats-section"><h3>Set da completare</h3>';
+    html += '<div class="stats-section stats-wide"><h3>Set da completare (' + st.incomplete.length + ')</h3>';
     if(st.incomplete.length === 0){
       html += '<p class="stats-note" style="margin:0;">Tutti i set sono completi.</p>';
     } else {
-      html += '<div class="almost-list">';
+      html += '<p class="stats-note" style="margin:0 0 10px;">Dal più vicino al completamento. Tocca un set per aprirlo.</p><div class="almost-list">';
       st.incomplete.forEach(function(a){
         html += '<button class="almost-row" data-goto-set="' + escapeHtml(a.name) + '">'
           + '<div class="almost-top"><span class="almost-name">' + escapeHtml(a.name) + '</span>'
-          + '<span class="almost-missing">mancano ' + a.missing + ' · ' + a.pct + '%</span></div>'
+          + '<span class="almost-missing">' + a.pct + '%</span></div>'
           + '<div class="stat-bar"><div class="stat-fill" style="width:' + a.pct + '%"></div></div>'
-          + '<div class="almost-rar">Mancano: ' + escapeHtml(a.rarities) + '</div></button>';
+          + '<div class="almost-rar">Mancano ' + a.missing + ' · ' + escapeHtml(a.rarities) + '</div></button>';
       });
       html += '</div>';
     }
-    html += '</div>';
-
-    html += '<div class="stats-section"><h3>Per tipo di prodotto</h3>';
-    CATEGORY_LABELS.forEach(function(c){ if(st.byCategory[c[0]]) html += statRow(c[1], st.byCategory[c[0]]); });
     html += '</div>';
 
     html += '<div class="stats-section stats-wide"><h3>Andamento</h3>' + historyChart(meta.history, container.clientWidth - 44) + '</div>';
